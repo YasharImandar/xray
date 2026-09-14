@@ -98,6 +98,7 @@
   "menu": {
     "theme": "Tema",
     "dashboard": "Genel Bakış",
+    "monitoring": "İzleme",
     "inbounds": "Gelen Bağlantılar",
     "clients": "Kullanıcılar",
     "groups": "Gruplar",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "Geçersiz kullanıcı adı, şifre veya iki adımlı doğrulama kodu.",
         "successLogin": "Hesabınıza başarıyla giriş yaptınız."
       }
+    },
+    "monitoring": {
+      "title": "İzleme",
+      "live": "Canlı",
+      "thisServer": "Bu sunucu",
+      "onlineClients": "Çevrimiçi kullanıcılar",
+      "noOnlineClients": "Çevrimiçi kullanıcı yok",
+      "noInbounds": "Gelen bağlantı yok",
+      "noNodes": "Düğüm yok",
+      "inboundCount": "Gelen bağlantılar",
+      "nodeCount": "Düğümler",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "Yük"
     },
     "index": {
       "cpu": "CPU",

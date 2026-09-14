@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 const TITLE_KEYS: Record<string, string> = {
   '/': 'menu.dashboard',
+  '/monitoring': 'menu.monitoring',
   '/inbounds': 'menu.inbounds',
   '/clients': 'menu.clients',
   '/groups': 'menu.groups',

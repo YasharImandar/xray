@@ -98,6 +98,7 @@
   "menu": {
     "theme": "主题",
     "dashboard": "系统状态",
+    "monitoring": "监控",
     "inbounds": "入站",
     "clients": "客户端",
     "groups": "分组",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "用户名、密码或双重验证码无效。",
         "successLogin": "您已成功登录您的账户。"
       }
+    },
+    "monitoring": {
+      "title": "监控",
+      "live": "实时",
+      "thisServer": "本机",
+      "onlineClients": "在线客户端",
+      "noOnlineClients": "暂无在线客户端",
+      "noInbounds": "暂无入站",
+      "noNodes": "暂无节点",
+      "inboundCount": "入站",
+      "nodeCount": "节点",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "负载"
     },
     "index": {
       "cpu": "CPU",

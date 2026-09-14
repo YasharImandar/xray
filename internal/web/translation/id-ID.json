@@ -98,6 +98,7 @@
   "menu": {
     "theme": "Tema",
     "dashboard": "Ikhtisar",
+    "monitoring": "Pemantauan",
     "inbounds": "Inbound",
     "clients": "Klien",
     "groups": "Grup",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "Username, kata sandi, atau kode dua faktor tidak valid.",
         "successLogin": "Anda telah berhasil masuk ke akun Anda."
       }
+    },
+    "monitoring": {
+      "title": "Pemantauan",
+      "live": "Langsung",
+      "thisServer": "Server ini",
+      "onlineClients": "Klien online",
+      "noOnlineClients": "Tidak ada klien online",
+      "noInbounds": "Tidak ada inbound",
+      "noNodes": "Tidak ada node",
+      "inboundCount": "Inbound",
+      "nodeCount": "Node",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "Beban"
     },
     "index": {
       "cpu": "CPU",

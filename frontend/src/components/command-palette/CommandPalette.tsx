@@ -20,6 +20,7 @@ import {
   FileTextOutlined,
   GlobalOutlined,
   ImportOutlined,
+  LineChartOutlined,
   LoadingOutlined,
   MailOutlined,
   MessageOutlined,
@@ -347,6 +348,12 @@ export default function CommandPalette() {
         title: t('menu.dashboard'),
         keywords: ['overview', 'dashboard', 'cpu', 'ram', 'memory', 'traffic', 'speed'],
         icon: <DashboardOutlined />,
+      },
+      {
+        path: '/monitoring',
+        title: t('menu.monitoring'),
+        keywords: ['monitoring', 'monitor', 'live', 'online', 'metrics', 'health', 'status'],
+        icon: <LineChartOutlined />,
       },
       {
         path: '/inbounds',

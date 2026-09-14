@@ -98,6 +98,7 @@
   "menu": {
     "theme": "Chủ đề",
     "dashboard": "Trạng thái hệ thống",
+    "monitoring": "Giám sát",
     "inbounds": "Inbound",
     "clients": "Khách hàng",
     "groups": "Nhóm",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "Tên người dùng, mật khẩu hoặc mã xác thực hai yếu tố không hợp lệ.",
         "successLogin": "Bạn đã đăng nhập vào tài khoản thành công."
       }
+    },
+    "monitoring": {
+      "title": "Giám sát",
+      "live": "Trực tiếp",
+      "thisServer": "Máy chủ này",
+      "onlineClients": "Khách hàng trực tuyến",
+      "noOnlineClients": "Không có khách hàng trực tuyến",
+      "noInbounds": "Không có inbound",
+      "noNodes": "Không có nút",
+      "inboundCount": "Inbound",
+      "nodeCount": "Nút",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "Tải"
     },
     "index": {
       "cpu": "CPU",

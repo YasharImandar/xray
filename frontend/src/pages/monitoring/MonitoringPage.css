@@ -1,0 +1,67 @@
+.monitoring-page .mon-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.monitoring-page .mon-title {
+  margin: 0 !important;
+}
+
+.monitoring-page .mon-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ant-color-success);
+}
+
+.monitoring-page .mon-live-dot {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.monitoring-page .mon-live-dot::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  animation: ovPulse 1.6s infinite ease-out;
+}
+
+.monitoring-page .mon-load {
+  margin-inline-start: auto;
+  font-size: 12px;
+  color: var(--ant-color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.monitoring-page .summary-card {
+  padding: 8px 4px;
+}
+
+@media (max-width: 768px) {
+  .monitoring-page .content-area {
+    padding: 12px;
+    padding-top: 64px;
+  }
+
+  .monitoring-page .mon-load {
+    margin-inline-start: 0;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monitoring-page .mon-live-dot::after {
+    animation: none;
+  }
+}

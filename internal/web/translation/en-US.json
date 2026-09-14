@@ -98,6 +98,7 @@
   "menu": {
     "theme": "Theme",
     "dashboard": "Overview",
+    "monitoring": "Monitoring",
     "inbounds": "Inbounds",
     "clients": "Clients",
     "groups": "Groups",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "Invalid username or password or two-factor code.",
         "successLogin": "You have successfully logged into your account."
       }
+    },
+    "monitoring": {
+      "title": "Monitoring",
+      "live": "Live",
+      "thisServer": "This server",
+      "onlineClients": "Online clients",
+      "noOnlineClients": "No clients online",
+      "noInbounds": "No inbounds",
+      "noNodes": "No nodes",
+      "inboundCount": "Inbounds",
+      "nodeCount": "Nodes",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "Load"
     },
     "index": {
       "cpu": "CPU",

@@ -98,6 +98,7 @@
   "menu": {
     "theme": "テーマ",
     "dashboard": "ダッシュボード",
+    "monitoring": "モニタリング",
     "inbounds": "インバウンド",
     "clients": "クライアント",
     "groups": "グループ",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "ユーザー名、パスワード、または二段階認証コードが無効です。",
         "successLogin": "アカウントに正常にログインしました。"
       }
+    },
+    "monitoring": {
+      "title": "モニタリング",
+      "live": "ライブ",
+      "thisServer": "このサーバー",
+      "onlineClients": "オンラインクライアント",
+      "noOnlineClients": "オンラインのクライアントはありません",
+      "noInbounds": "インバウンドはありません",
+      "noNodes": "ノードはありません",
+      "inboundCount": "インバウンド",
+      "nodeCount": "ノード",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "負荷"
     },
     "index": {
       "cpu": "CPU",

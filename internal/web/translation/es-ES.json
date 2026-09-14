@@ -98,6 +98,7 @@
   "menu": {
     "theme": "Tema",
     "dashboard": "Estado del Sistema",
+    "monitoring": "Monitoreo",
     "inbounds": "Entradas",
     "clients": "Clientes",
     "groups": "Grupos",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "Nombre de usuario, contraseña o código de dos factores incorrecto.",
         "successLogin": "Has iniciado sesión en tu cuenta correctamente."
       }
+    },
+    "monitoring": {
+      "title": "Monitoreo",
+      "live": "En vivo",
+      "thisServer": "Este servidor",
+      "onlineClients": "Clientes en línea",
+      "noOnlineClients": "No hay clientes en línea",
+      "noInbounds": "No hay entradas",
+      "noNodes": "No hay nodos",
+      "inboundCount": "Entradas",
+      "nodeCount": "Nodos",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "Carga"
     },
     "index": {
       "cpu": "CPU",

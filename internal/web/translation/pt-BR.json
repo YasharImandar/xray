@@ -98,6 +98,7 @@
   "menu": {
     "theme": "Tema",
     "dashboard": "Visão Geral",
+    "monitoring": "Monitoramento",
     "inbounds": "Entradas",
     "clients": "Clientes",
     "groups": "Grupos",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "Nome de usuário, senha ou código de dois fatores inválido.",
         "successLogin": "Você entrou na sua conta com sucesso."
       }
+    },
+    "monitoring": {
+      "title": "Monitoramento",
+      "live": "Ao vivo",
+      "thisServer": "Este servidor",
+      "onlineClients": "Clientes online",
+      "noOnlineClients": "Nenhum cliente online",
+      "noInbounds": "Nenhuma entrada",
+      "noNodes": "Nenhum nó",
+      "inboundCount": "Entradas",
+      "nodeCount": "Nós",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "Carga"
     },
     "index": {
       "cpu": "CPU",

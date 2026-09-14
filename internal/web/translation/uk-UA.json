@@ -98,6 +98,7 @@
   "menu": {
     "theme": "Тема",
     "dashboard": "Огляд",
+    "monitoring": "Моніторинг",
     "inbounds": "Вхідні",
     "clients": "Клієнти",
     "groups": "Групи",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "Невірне ім’я користувача, пароль або код двофакторної аутентифікації.",
         "successLogin": "Ви успішно увійшли до свого облікового запису."
       }
+    },
+    "monitoring": {
+      "title": "Моніторинг",
+      "live": "Онлайн",
+      "thisServer": "Цей сервер",
+      "onlineClients": "Клієнти онлайн",
+      "noOnlineClients": "Немає клієнтів онлайн",
+      "noInbounds": "Немає вхідних",
+      "noNodes": "Немає вузлів",
+      "inboundCount": "Вхідні",
+      "nodeCount": "Вузли",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "Навантаження"
     },
     "index": {
       "cpu": "ЦП",

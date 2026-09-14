@@ -98,6 +98,7 @@
   "menu": {
     "theme": "الثيم",
     "dashboard": "نظرة عامة",
+    "monitoring": "المراقبة",
     "inbounds": "الواردات",
     "clients": "العملاء",
     "groups": "المجموعات",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "اسم المستخدم أو كلمة المرور أو كود المصادقة الثنائية غير صحيح.",
         "successLogin": "لقد تم تسجيل الدخول إلى حسابك بنجاح."
       }
+    },
+    "monitoring": {
+      "title": "المراقبة",
+      "live": "مباشر",
+      "thisServer": "هذا الخادم",
+      "onlineClients": "العملاء المتصلون",
+      "noOnlineClients": "لا يوجد عملاء متصلون",
+      "noInbounds": "لا توجد واردات",
+      "noNodes": "لا توجد نودز",
+      "inboundCount": "الواردات",
+      "nodeCount": "النودز",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "الحمل"
     },
     "index": {
       "cpu": "المعالج",

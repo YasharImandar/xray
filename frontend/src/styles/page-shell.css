@@ -1,4 +1,5 @@
 .index-page,
+.monitoring-page,
 .clients-page,
 .inbounds-page,
 .xray-page,
@@ -13,6 +14,7 @@
 }
 
 .index-page.is-dark,
+.monitoring-page.is-dark,
 .clients-page.is-dark,
 .inbounds-page.is-dark,
 .xray-page.is-dark,
@@ -25,6 +27,7 @@
 }
 
 .index-page.is-dark.is-ultra,
+.monitoring-page.is-dark.is-ultra,
 .clients-page.is-dark.is-ultra,
 .inbounds-page.is-dark.is-ultra,
 .xray-page.is-dark.is-ultra,
@@ -38,6 +41,8 @@
 
 .index-page .ant-layout,
 .index-page .ant-layout-content,
+.monitoring-page .ant-layout,
+.monitoring-page .ant-layout-content,
 .clients-page .ant-layout,
 .clients-page .ant-layout-content,
 .inbounds-page .ant-layout,
@@ -56,6 +61,7 @@
 }
 
 .index-page .content-shell,
+.monitoring-page .content-shell,
 .clients-page .content-shell,
 .inbounds-page .content-shell,
 .xray-page .content-shell,
@@ -67,6 +73,7 @@
 }
 
 .index-page .content-area,
+.monitoring-page .content-area,
 .clients-page .content-area,
 .inbounds-page .content-area,
 .xray-page .content-area,
@@ -78,6 +85,7 @@
 
 @media (max-width: 768px) {
   .clients-page .content-area,
+  .monitoring-page .content-area,
   .inbounds-page .content-area,
   .nodes-page .content-area,
   .groups-page .content-area {

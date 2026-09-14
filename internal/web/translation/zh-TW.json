@@ -98,6 +98,7 @@
   "menu": {
     "theme": "主題",
     "dashboard": "系統狀態",
+    "monitoring": "監控",
     "inbounds": "入站",
     "clients": "客戶端",
     "groups": "群組",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "用戶名、密碼或雙重驗證碼無效。",
         "successLogin": "您已成功登入您的帳戶。"
       }
+    },
+    "monitoring": {
+      "title": "監控",
+      "live": "即時",
+      "thisServer": "本機",
+      "onlineClients": "在線客戶端",
+      "noOnlineClients": "暫無在線客戶端",
+      "noInbounds": "暫無入站",
+      "noNodes": "暫無節點",
+      "inboundCount": "入站",
+      "nodeCount": "節點",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "負載"
     },
     "index": {
       "cpu": "CPU",

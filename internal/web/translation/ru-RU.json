@@ -98,6 +98,7 @@
   "menu": {
     "theme": "Тема",
     "dashboard": "Дашборд",
+    "monitoring": "Мониторинг",
     "inbounds": "Входящие",
     "clients": "Клиенты",
     "groups": "Группы",
@@ -127,6 +128,20 @@
         "wrongUsernameOrPassword": "Неверные данные учетной записи.",
         "successLogin": "Вход выполнен успешно"
       }
+    },
+    "monitoring": {
+      "title": "Мониторинг",
+      "live": "Онлайн",
+      "thisServer": "Этот сервер",
+      "onlineClients": "Клиенты онлайн",
+      "noOnlineClients": "Нет клиентов онлайн",
+      "noInbounds": "Нет входящих",
+      "noNodes": "Нет узлов",
+      "inboundCount": "Входящие",
+      "nodeCount": "Узлы",
+      "amneziawg": "AmneziaWG",
+      "xrayVersion": "Xray {version}",
+      "load": "Нагрузка"
     },
     "index": {
       "cpu": "ЦП",
