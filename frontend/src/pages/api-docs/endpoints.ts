@@ -792,6 +792,30 @@ export const sections: readonly Section[] = [
         responseSchema: 'AmneziaWGLogs',
       },
       {
+        method: 'GET',
+        path: '/panel/api/server/extensionMonitor',
+        summary:
+          'Live traffic snapshot for the inbound named extension (port 2053): parsed access-log events, per-client last destination, and window totals.',
+        params: [
+          {
+            name: 'count',
+            in: 'query',
+            type: 'number',
+            desc: 'Maximum trailing log events to return. Defaults to 400, capped at 2000.',
+            optional: true,
+            defaultValue: 400,
+          },
+          {
+            name: 'filter',
+            in: 'query',
+            type: 'string',
+            desc: 'Case-insensitive substring filter applied to the raw access-log line.',
+            optional: true,
+          },
+        ],
+        responseSchema: 'ExtensionMonitorSnapshot',
+      },
+      {
         method: 'POST',
         path: '/panel/api/server/importDB',
         summary:

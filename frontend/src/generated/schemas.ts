@@ -2058,6 +2058,298 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "ExtensionClientRow": {
+    "description": "ExtensionClientRow is one client on the extension inbound plus last dest.",
+    "properties": {
+      "down": {
+        "example": 4194304,
+        "format": "int64",
+        "type": "integer"
+      },
+      "email": {
+        "example": "alice@example.com",
+        "type": "string"
+      },
+      "enable": {
+        "example": true,
+        "type": "boolean"
+      },
+      "hits": {
+        "example": 12,
+        "type": "integer"
+      },
+      "lastDest": {
+        "example": "example.com:443",
+        "type": "string"
+      },
+      "lastOnline": {
+        "example": 1735680000000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "lastURL": {
+        "example": "https://example.com",
+        "type": "string"
+      },
+      "online": {
+        "example": true,
+        "type": "boolean"
+      },
+      "total": {
+        "example": 10737418240,
+        "format": "int64",
+        "type": "integer"
+      },
+      "up": {
+        "example": 1048576,
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "down",
+      "email",
+      "enable",
+      "hits",
+      "lastDest",
+      "lastOnline",
+      "lastURL",
+      "online",
+      "total",
+      "up"
+    ],
+    "type": "object"
+  },
+  "ExtensionInboundInfo": {
+    "description": "ExtensionInboundInfo is the panel inbound this monitor is pinned to.",
+    "properties": {
+      "clients": {
+        "example": 3,
+        "type": "integer"
+      },
+      "down": {
+        "example": 4194304,
+        "format": "int64",
+        "type": "integer"
+      },
+      "enable": {
+        "example": true,
+        "type": "boolean"
+      },
+      "id": {
+        "example": 1,
+        "type": "integer"
+      },
+      "port": {
+        "example": 2053,
+        "type": "integer"
+      },
+      "protocol": {
+        "example": "vless",
+        "type": "string"
+      },
+      "remark": {
+        "example": "extension",
+        "type": "string"
+      },
+      "tag": {
+        "example": "inbound-2053",
+        "type": "string"
+      },
+      "up": {
+        "example": 1048576,
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "clients",
+      "down",
+      "enable",
+      "id",
+      "port",
+      "protocol",
+      "remark",
+      "tag",
+      "up"
+    ],
+    "type": "object"
+  },
+  "ExtensionLogEntry": {
+    "description": "ExtensionLogEntry is one access-log event from the extension inbound.",
+    "properties": {
+      "clientIp": {
+        "example": "192.0.2.10",
+        "type": "string"
+      },
+      "clientPort": {
+        "example": "54321",
+        "type": "string"
+      },
+      "destAddress": {
+        "example": "tcp:example.com:443",
+        "type": "string"
+      },
+      "destHost": {
+        "example": "example.com",
+        "type": "string"
+      },
+      "destPort": {
+        "example": "443",
+        "type": "string"
+      },
+      "email": {
+        "example": "alice@example.com",
+        "type": "string"
+      },
+      "event": {
+        "example": "direct",
+        "type": "string"
+      },
+      "eventCode": {
+        "example": 0,
+        "type": "integer"
+      },
+      "inbound": {
+        "example": "inbound-2053",
+        "type": "string"
+      },
+      "network": {
+        "example": "tcp",
+        "type": "string"
+      },
+      "outbound": {
+        "example": "direct",
+        "type": "string"
+      },
+      "packet": {
+        "example": "tcp:example.com:443",
+        "type": "string"
+      },
+      "raw": {
+        "example": "2025/01/01 12:00:00.000000 from 192.0.2.10:54321 accepted tcp:example.com:443 [inbound-2053 \u003e\u003e direct] email: alice@example.com",
+        "type": "string"
+      },
+      "status": {
+        "example": "accepted",
+        "type": "string"
+      },
+      "time": {
+        "example": "2025-01-01T12:00:00Z",
+        "type": "string"
+      },
+      "url": {
+        "example": "https://example.com",
+        "type": "string"
+      }
+    },
+    "required": [
+      "clientIp",
+      "clientPort",
+      "destAddress",
+      "destHost",
+      "destPort",
+      "email",
+      "event",
+      "eventCode",
+      "inbound",
+      "network",
+      "outbound",
+      "packet",
+      "raw",
+      "status",
+      "time",
+      "url"
+    ],
+    "type": "object"
+  },
+  "ExtensionMonitorSnapshot": {
+    "description": "ExtensionMonitorSnapshot is the Monitoring page payload for inbound extension.",
+    "properties": {
+      "accessLogEnabled": {
+        "example": true,
+        "type": "boolean"
+      },
+      "accessLogPath": {
+        "example": "/var/log/x-ui/access.log",
+        "type": "string"
+      },
+      "clients": {
+        "items": {
+          "$ref": "#/components/schemas/ExtensionClientRow"
+        },
+        "type": "array"
+      },
+      "found": {
+        "example": true,
+        "type": "boolean"
+      },
+      "inbound": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ExtensionInboundInfo"
+          }
+        ],
+        "nullable": true
+      },
+      "logs": {
+        "items": {
+          "$ref": "#/components/schemas/ExtensionLogEntry"
+        },
+        "type": "array"
+      },
+      "stats": {
+        "$ref": "#/components/schemas/ExtensionMonitorStats"
+      }
+    },
+    "required": [
+      "accessLogEnabled",
+      "accessLogPath",
+      "clients",
+      "found",
+      "logs",
+      "stats"
+    ],
+    "type": "object"
+  },
+  "ExtensionMonitorStats": {
+    "description": "ExtensionMonitorStats is the live tally for the current log window.",
+    "properties": {
+      "accepted": {
+        "example": 120,
+        "type": "integer"
+      },
+      "eventCount": {
+        "example": 128,
+        "type": "integer"
+      },
+      "online": {
+        "example": 2,
+        "type": "integer"
+      },
+      "rejected": {
+        "example": 8,
+        "type": "integer"
+      },
+      "uniqueDests": {
+        "example": 17,
+        "type": "integer"
+      },
+      "uniqueUsers": {
+        "example": 4,
+        "type": "integer"
+      }
+    },
+    "required": [
+      "accepted",
+      "eventCount",
+      "online",
+      "rejected",
+      "uniqueDests",
+      "uniqueUsers"
+    ],
+    "type": "object"
+  },
   "FallbackParentInfo": {
     "description": "FallbackParentInfo carries everything the frontend needs to rewrite a\nchild inbound's client link: where to connect (the master's address\nand port) and which path matched on the master's fallbacks array.\nThe frontend already has the master inbound in its dbInbounds list,\nso we only ship identifiers + the match path here.",
     "properties": {

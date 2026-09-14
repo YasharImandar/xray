@@ -64,6 +64,7 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/getNewVlessEnc", a.getNewVlessEnc)
 	g.GET("/clientIps", a.getClientIps)
 	g.GET("/fail2banStatus", a.getFail2banStatus)
+	g.GET("/extensionMonitor", a.getExtensionMonitor)
 
 	g.POST("/stopXrayService", a.stopXrayService)
 	g.POST("/restartXrayService", a.restartXrayService)
@@ -326,6 +327,10 @@ func (a *ServerController) getXrayLogs(c *gin.Context) {
 func (a *ServerController) getAmneziaWGLogs(c *gin.Context) {
 	logs := a.serverService.GetAmneziaWGLogs(c.Param("count"), c.PostForm("filter"))
 	jsonObj(c, logs, nil)
+}
+
+func (a *ServerController) getExtensionMonitor(c *gin.Context) {
+	jsonObj(c, a.serverService.GetExtensionMonitor(c.DefaultQuery("count", "400"), c.Query("filter")), nil)
 }
 
 // getConfigJson retrieves the Xray configuration as JSON.

@@ -524,6 +524,103 @@ export const EXAMPLES: Record<string, unknown> = {
     "onlineCount": 1,
     "total": 2000
   },
+  "ExtensionClientRow": {
+    "down": 4194304,
+    "email": "alice@example.com",
+    "enable": true,
+    "hits": 12,
+    "lastDest": "example.com:443",
+    "lastOnline": 1735680000000,
+    "lastURL": "https://example.com",
+    "online": true,
+    "total": 10737418240,
+    "up": 1048576
+  },
+  "ExtensionInboundInfo": {
+    "clients": 3,
+    "down": 4194304,
+    "enable": true,
+    "id": 1,
+    "port": 2053,
+    "protocol": "vless",
+    "remark": "extension",
+    "tag": "inbound-2053",
+    "up": 1048576
+  },
+  "ExtensionLogEntry": {
+    "clientIp": "192.0.2.10",
+    "clientPort": "54321",
+    "destAddress": "tcp:example.com:443",
+    "destHost": "example.com",
+    "destPort": "443",
+    "email": "alice@example.com",
+    "event": "direct",
+    "eventCode": 0,
+    "inbound": "inbound-2053",
+    "network": "tcp",
+    "outbound": "direct",
+    "packet": "tcp:example.com:443",
+    "raw": "2025/01/01 12:00:00.000000 from 192.0.2.10:54321 accepted tcp:example.com:443 [inbound-2053 \u003e\u003e direct] email: alice@example.com",
+    "status": "accepted",
+    "time": "2025-01-01T12:00:00Z",
+    "url": "https://example.com"
+  },
+  "ExtensionMonitorSnapshot": {
+    "accessLogEnabled": true,
+    "accessLogPath": "/var/log/x-ui/access.log",
+    "clients": [
+      {
+        "down": 4194304,
+        "email": "alice@example.com",
+        "enable": true,
+        "hits": 12,
+        "lastDest": "example.com:443",
+        "lastOnline": 1735680000000,
+        "lastURL": "https://example.com",
+        "online": true,
+        "total": 10737418240,
+        "up": 1048576
+      }
+    ],
+    "found": true,
+    "inbound": null,
+    "logs": [
+      {
+        "clientIp": "192.0.2.10",
+        "clientPort": "54321",
+        "destAddress": "tcp:example.com:443",
+        "destHost": "example.com",
+        "destPort": "443",
+        "email": "alice@example.com",
+        "event": "direct",
+        "eventCode": 0,
+        "inbound": "inbound-2053",
+        "network": "tcp",
+        "outbound": "direct",
+        "packet": "tcp:example.com:443",
+        "raw": "2025/01/01 12:00:00.000000 from 192.0.2.10:54321 accepted tcp:example.com:443 [inbound-2053 \u003e\u003e direct] email: alice@example.com",
+        "status": "accepted",
+        "time": "2025-01-01T12:00:00Z",
+        "url": "https://example.com"
+      }
+    ],
+    "stats": {
+      "accepted": 120,
+      "eventCount": 128,
+      "online": 2,
+      "rejected": 8,
+      "uniqueDests": 17,
+      "uniqueUsers": 4
+    }
+  },
+  "ExtensionMonitorStats": {
+    "accepted": 120,
+    "eventCount": 128,
+    "online": 2,
+    "rejected": 8,
+    "uniqueDests": 17,
+    "uniqueUsers": 4
+  },
   "FallbackParentInfo": {
     "masterId": 0,
     "path": ""

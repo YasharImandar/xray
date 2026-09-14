@@ -2,6 +2,8 @@ export const keys = {
   server: {
     status: () => ['server', 'status'] as const,
     fail2banStatus: () => ['server', 'fail2banStatus'] as const,
+    extensionMonitor: (count: number, filter: string) =>
+      ['server', 'extensionMonitor', count, filter] as const,
   },
   nodes: {
     root: () => ['nodes'] as const,

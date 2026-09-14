@@ -507,6 +507,74 @@ export const ClientsSummarySchema = z.object({
 });
 export type ClientsSummary = z.infer<typeof ClientsSummarySchema>;
 
+export const ExtensionClientRowSchema = z.object({
+  down: z.number().int(),
+  email: z.string(),
+  enable: z.boolean(),
+  hits: z.number().int(),
+  lastDest: z.string(),
+  lastOnline: z.number().int(),
+  lastURL: z.string(),
+  online: z.boolean(),
+  total: z.number().int(),
+  up: z.number().int(),
+});
+export type ExtensionClientRow = z.infer<typeof ExtensionClientRowSchema>;
+
+export const ExtensionInboundInfoSchema = z.object({
+  clients: z.number().int(),
+  down: z.number().int(),
+  enable: z.boolean(),
+  id: z.number().int(),
+  port: z.number().int(),
+  protocol: z.string(),
+  remark: z.string(),
+  tag: z.string(),
+  up: z.number().int(),
+});
+export type ExtensionInboundInfo = z.infer<typeof ExtensionInboundInfoSchema>;
+
+export const ExtensionLogEntrySchema = z.object({
+  clientIp: z.string(),
+  clientPort: z.string(),
+  destAddress: z.string(),
+  destHost: z.string(),
+  destPort: z.string(),
+  email: z.string(),
+  event: z.string(),
+  eventCode: z.number().int(),
+  inbound: z.string(),
+  network: z.string(),
+  outbound: z.string(),
+  packet: z.string(),
+  raw: z.string(),
+  status: z.string(),
+  time: z.string(),
+  url: z.string(),
+});
+export type ExtensionLogEntry = z.infer<typeof ExtensionLogEntrySchema>;
+
+export const ExtensionMonitorSnapshotSchema = z.object({
+  accessLogEnabled: z.boolean(),
+  accessLogPath: z.string(),
+  clients: z.array(z.lazy(() => ExtensionClientRowSchema)),
+  found: z.boolean(),
+  inbound: z.lazy(() => ExtensionInboundInfoSchema).nullable().optional(),
+  logs: z.array(z.lazy(() => ExtensionLogEntrySchema)),
+  stats: z.lazy(() => ExtensionMonitorStatsSchema),
+});
+export type ExtensionMonitorSnapshot = z.infer<typeof ExtensionMonitorSnapshotSchema>;
+
+export const ExtensionMonitorStatsSchema = z.object({
+  accepted: z.number().int(),
+  eventCount: z.number().int(),
+  online: z.number().int(),
+  rejected: z.number().int(),
+  uniqueDests: z.number().int(),
+  uniqueUsers: z.number().int(),
+});
+export type ExtensionMonitorStats = z.infer<typeof ExtensionMonitorStatsSchema>;
+
 export const FallbackParentInfoSchema = z.object({
   masterId: z.number().int(),
   path: z.string().optional(),

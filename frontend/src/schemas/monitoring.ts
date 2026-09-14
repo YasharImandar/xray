@@ -1,0 +1,41 @@
+import { z } from 'zod';
+
+export const ExtensionMonitorSnapshotSchema = z
+  .object({
+    found: z.boolean(),
+    accessLogEnabled: z.boolean().optional(),
+    accessLogPath: z.string().optional(),
+    inbound: z
+      .object({
+        id: z.number(),
+        remark: z.string(),
+        tag: z.string().optional(),
+        protocol: z.string().optional(),
+        port: z.number(),
+        enable: z.boolean().optional(),
+        up: z.number().optional(),
+        down: z.number().optional(),
+        clients: z.number().optional(),
+      })
+      .loose()
+      .nullable()
+      .optional(),
+    logs: z.array(z.object({ raw: z.string() }).loose()),
+    clients: z.array(z.object({ email: z.string() }).loose()),
+    stats: z
+      .object({
+        eventCount: z.number().optional(),
+        uniqueDests: z.number().optional(),
+        uniqueUsers: z.number().optional(),
+        online: z.number().optional(),
+        accepted: z.number().optional(),
+        rejected: z.number().optional(),
+      })
+      .loose()
+      .optional(),
+  })
+  .loose();
+
+export type ExtensionMonitorSnapshot = z.infer<typeof ExtensionMonitorSnapshotSchema>;
+export type ExtensionLogEntry = ExtensionMonitorSnapshot['logs'][number];
+export type ExtensionClientRow = ExtensionMonitorSnapshot['clients'][number];

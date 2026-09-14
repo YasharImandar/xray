@@ -1,3 +1,9 @@
+.monitoring-page .mon-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .monitoring-page .mon-bar {
   display: flex;
   align-items: center;
@@ -19,6 +25,10 @@
   color: var(--ant-color-success);
 }
 
+.monitoring-page .mon-live.is-paused {
+  color: var(--ant-color-warning);
+}
+
 .monitoring-page .mon-live-dot {
   position: relative;
   width: 6px;
@@ -37,15 +47,35 @@
   animation: ovPulse 1.6s infinite ease-out;
 }
 
-.monitoring-page .mon-load {
-  margin-inline-start: auto;
-  font-size: 12px;
-  color: var(--ant-color-text-secondary);
-  font-variant-numeric: tabular-nums;
+.monitoring-page .mon-live.is-paused .mon-live-dot::after {
+  animation: none;
 }
 
+.monitoring-page .mon-actions {
+  margin-inline-start: auto;
+}
+
+.monitoring-page .mon-hint {
+  margin-bottom: 0;
+  color: var(--ant-color-text-secondary);
+}
+
+.monitoring-page .mon-alert,
+.monitoring-page .mon-inbound-card,
+.monitoring-page .mon-log-card,
 .monitoring-page .summary-card {
-  padding: 8px 4px;
+  width: 100%;
+}
+
+.monitoring-page .mon-raw {
+  margin-bottom: 0 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.monitoring-page .mon-log-details {
+  margin-inline-start: 8px;
 }
 
 @media (max-width: 768px) {
@@ -54,7 +84,7 @@
     padding-top: 64px;
   }
 
-  .monitoring-page .mon-load {
+  .monitoring-page .mon-actions {
     margin-inline-start: 0;
     width: 100%;
   }

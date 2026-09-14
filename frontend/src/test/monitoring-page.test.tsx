@@ -46,56 +46,68 @@ vi.mock('@/api/queries/useStatusQuery', async () => {
   };
 });
 
-vi.mock('@/api/queries/useNodesQuery', () => ({
-  useNodesQuery: () => ({
-    nodes: [],
-    totals: {
-      total: 0,
-      online: 0,
-      offline: 0,
-      avgLatency: 0,
-      inbounds: 0,
-      clients: 0,
-      onlineClients: 0,
-      depleted: 0,
-    },
-    loading: false,
-    fetched: true,
-    fetchError: '',
-    refetch: vi.fn(),
-  }),
-}));
-
 describe('MonitoringPage', () => {
-  it('renders live monitoring with online clients and inbound traffic', async () => {
+  it('renders extension inbound traffic logs with dest URL and packet', async () => {
     vi.mocked(HttpUtil.get).mockImplementation(async (url: string) => {
       if (url.includes('/panel/api/server/history/')) return new Msg(true, '', []);
-      if (url.includes('/panel/api/nodes/list')) return new Msg(true, '', []);
-      if (url.includes('/panel/api/inbounds/list/slim')) {
-        return new Msg(true, '', [
-          {
+      if (url.includes('/panel/api/server/extensionMonitor')) {
+        return new Msg(true, '', {
+          found: true,
+          accessLogEnabled: true,
+          inbound: {
             id: 1,
-            remark: 'vless-443',
-            tag: 'in-443',
+            remark: 'extension',
+            tag: 'inbound-2053',
             protocol: 'vless',
-            port: 443,
+            port: 2053,
             enable: true,
             up: 1024,
             down: 2048,
-            clientStats: [{ email: 'alice@example.com' }],
+            clients: 1,
           },
-        ]);
+          logs: [
+            {
+              time: '2025-01-01T12:00:00.000Z',
+              email: 'alice@example.com',
+              clientIp: '192.0.2.10',
+              clientPort: '54321',
+              network: 'tcp',
+              destHost: 'example.com',
+              destPort: '443',
+              destAddress: 'tcp:example.com:443',
+              url: 'https://example.com',
+              packet: 'tcp:example.com:443',
+              inbound: 'inbound-2053',
+              outbound: 'direct',
+              status: 'accepted',
+              event: 'direct',
+              eventCode: 0,
+              raw: '2025/01/01 12:00:00.000000 from 192.0.2.10:54321 accepted tcp:example.com:443 [inbound-2053 >> direct] email: alice@example.com',
+            },
+          ],
+          clients: [
+            {
+              email: 'alice@example.com',
+              enable: true,
+              online: true,
+              up: 1024,
+              down: 2048,
+              lastDest: 'example.com:443',
+              lastURL: 'https://example.com',
+              hits: 1,
+            },
+          ],
+          stats: {
+            eventCount: 1,
+            uniqueDests: 1,
+            uniqueUsers: 1,
+            online: 1,
+            accepted: 1,
+            rejected: 0,
+          },
+        });
       }
       return new Msg(false, 'unexpected get ' + url, null);
-    });
-    vi.mocked(HttpUtil.post).mockImplementation(async (url: string) => {
-      if (url.includes('/panel/api/clients/onlines')) {
-        return new Msg(true, '', ['alice@example.com']);
-      }
-      if (url.includes('/panel/api/clients/lastOnline')) {
-        return new Msg(true, '', { 'alice@example.com': 1735680000000 });
-      }
-      return new Msg(false, 'unexpected post ' + url, null);
     });
 
     renderWithProviders(
@@ -108,9 +120,10 @@ describe('MonitoringPage', () => {
       expect(screen.getByText('Live')).toBeTruthy();
     });
     await waitFor(() => {
-      expect(screen.getByText('alice@example.com')).toBeTruthy();
+      expect(screen.getAllByText('alice@example.com').length).toBeGreaterThan(0);
     });
-    expect(screen.getByText('vless-443')).toBeTruthy();
-    expect(screen.getByText('VLESS')).toBeTruthy();
+    expect(screen.getAllByText('https://example.com').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('tcp:example.com:443').length).toBeGreaterThan(0);
+    expect(screen.getByText('extension · 2053')).toBeTruthy();
   });
 });

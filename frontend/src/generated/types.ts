@@ -480,6 +480,69 @@ export interface ClientsSummary {
   total: number;
 }
 
+export interface ExtensionClientRow {
+  down: number;
+  email: string;
+  enable: boolean;
+  hits: number;
+  lastDest: string;
+  lastOnline: number;
+  lastURL: string;
+  online: boolean;
+  total: number;
+  up: number;
+}
+
+export interface ExtensionInboundInfo {
+  clients: number;
+  down: number;
+  enable: boolean;
+  id: number;
+  port: number;
+  protocol: string;
+  remark: string;
+  tag: string;
+  up: number;
+}
+
+export interface ExtensionLogEntry {
+  clientIp: string;
+  clientPort: string;
+  destAddress: string;
+  destHost: string;
+  destPort: string;
+  email: string;
+  event: string;
+  eventCode: number;
+  inbound: string;
+  network: string;
+  outbound: string;
+  packet: string;
+  raw: string;
+  status: string;
+  time: string;
+  url: string;
+}
+
+export interface ExtensionMonitorSnapshot {
+  accessLogEnabled: boolean;
+  accessLogPath: string;
+  clients: ExtensionClientRow[];
+  found: boolean;
+  inbound?: ExtensionInboundInfo | null;
+  logs: ExtensionLogEntry[];
+  stats: ExtensionMonitorStats;
+}
+
+export interface ExtensionMonitorStats {
+  accepted: number;
+  eventCount: number;
+  online: number;
+  rejected: number;
+  uniqueDests: number;
+  uniqueUsers: number;
+}
+
 export interface FallbackParentInfo {
   masterId: number;
   path?: string;
