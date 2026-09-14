@@ -40,7 +40,8 @@ type PanelUpdateInfo struct {
 }
 
 const (
-	panelUpdaterURL      = "https://raw.githubusercontent.com/MHSanaei/3x-ui/main/update.sh"
+	panelGitHubRepo      = "YasharImandar/xray"
+	panelUpdaterURL      = "https://raw.githubusercontent.com/" + panelGitHubRepo + "/main/update.sh"
 	maxPanelUpdaterBytes = 2 << 20
 	// devReleaseTag is the fixed-tag rolling pre-release the CI force-moves to the
 	// newest main commit; the dev update channel installs from it.
@@ -125,34 +126,10 @@ func (s *PanelService) RestartPanel(delay time.Duration) error {
 	return nil
 }
 
-// GetUpdateInfo checks GitHub for the latest 3x-ui release. When the dev channel
-// is enabled on a dev build it compares commits against the rolling dev release;
-// otherwise it compares versions against the latest stable tag.
+// GetUpdateInfo checks GitHub for the latest panel build. This fork publishes
+// a rolling per-commit binary as tag `dev-latest`; in-panel Update tracks that.
 func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
-	if devChannelActive() {
-		return getDevUpdateInfo()
-	}
-	latest, err := fetchLatestPanelVersion()
-	if err != nil {
-		return nil, err
-	}
-	current := config.GetBaseVersion()
-	return &PanelUpdateInfo{
-		Channel:         "stable",
-		CurrentVersion:  current,
-		LatestVersion:   latest,
-		UpdateAvailable: isNewerVersion(latest, current),
-	}, nil
-}
-
-// devChannelActive reports whether self-update should track the rolling dev
-// release. It is driven solely by the opt-in setting so the panel can
-// cross-grade a stable build onto the dev channel once the user enables it;
-// nothing updates without an explicit user action, so an unattended stable
-// binary with the toggle off stays on the stable channel.
-func devChannelActive() bool {
-	enabled, err := (&service.SettingService{}).GetDevChannelEnable()
-	return err == nil && enabled
+	return getDevUpdateInfo()
 }
 
 // getDevUpdateInfo compares the running commit against the commit recorded in the
@@ -181,7 +158,7 @@ func getDevUpdateInfo() (*PanelUpdateInfo, error) {
 // setting. Returns the run ID to pass to GetUpdateStatus so the caller can
 // tell this run's result apart from a stale one.
 func (s *PanelService) StartUpdate() (int64, error) {
-	return s.startUpdate(devChannelActive())
+	return s.startUpdate(true)
 }
 
 // StartUpdateChannel runs the updater against an explicitly chosen channel,
@@ -416,23 +393,12 @@ func downloadPanelUpdater() (string, error) {
 	return path, nil
 }
 
-func fetchLatestPanelVersion() (string, error) {
-	release, err := fetchPanelRelease("")
-	if err != nil {
-		return "", err
-	}
-	if release.TagName == "" {
-		return "", fmt.Errorf("latest panel release tag is empty")
-	}
-	return release.TagName, nil
-}
-
 // fetchPanelRelease fetches a release from GitHub. An empty tag resolves the
 // latest stable release; a non-empty tag (e.g. dev-latest) resolves that tag.
 func fetchPanelRelease(tag string) (*service.Release, error) {
-	url := "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest"
+	url := "https://api.github.com/repos/" + panelGitHubRepo + "/releases/latest"
 	if tag != "" {
-		url = "https://api.github.com/repos/MHSanaei/3x-ui/releases/tags/" + tag
+		url = "https://api.github.com/repos/" + panelGitHubRepo + "/releases/tags/" + tag
 	}
 	client := (&service.SettingService{}).NewProxiedHTTPClient(10 * time.Second)
 	req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)

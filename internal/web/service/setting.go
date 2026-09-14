@@ -164,7 +164,7 @@ var defaultValueMap = map[string]string{
 	"restartXrayOnClientDisable":  "true",
 	"xrayOutboundTestUrl":         "https://www.google.com/generate_204",
 	"panelOutbound":               "",
-	"devChannelEnable":            "false",
+	"devChannelEnable":            "true",
 
 	// LDAP defaults
 	"ldapEnable":             "false",

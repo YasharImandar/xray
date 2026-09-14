@@ -73,20 +73,24 @@ Built as an enhanced fork of the original X-UI project, 3X-UI adds broader proto
 
 ## Quick Start
 
+This fork installs a **prebuilt** binary from GitHub Releases. The VPS does not compile Go or Node.
+
+Each push to `main` publishes tag `dev-latest`. The one-liner below, `x-ui` menu option **2**, and **Update Panel** in the UI all install that binary.
+
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/YasharImandar/xray/main/install.sh)
 ```
 
-To install a specific version, append its tag (e.g. `v3.7.0`):
+To pin a tagged release (e.g. `v3.7.0`):
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh) v3.7.0
+bash <(curl -Ls https://raw.githubusercontent.com/YasharImandar/xray/main/install.sh) v3.7.0
 ```
 
-To install the rolling **dev** build (latest per-commit pre-release from `main`, not a stable release), pass `dev-latest`:
+The same rolling build is also available as `dev-latest`:
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh) dev-latest
+bash <(curl -Ls https://raw.githubusercontent.com/YasharImandar/xray/main/install.sh) dev-latest
 ```
 
 During installation a random username, password, and access path are generated. After installation, run `x-ui` to open the management menu, where you can start/stop the service, view or reset your login credentials, manage SSL certificates, and more.
