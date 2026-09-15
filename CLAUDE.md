@@ -85,7 +85,9 @@ file locations when it can answer in one hop.
   locally — do not "just compile on the box". See `deploy/README.md`.
   Verify with `make check` / `make run` on the local machine. Do not SSH to
   production to confirm a change. `make linux-amd64` is only for producing
-  the file you later copy — never for testing on the VPS.
+  the file you later copy — never for testing on the VPS. The exact swap
+  (stage as `x-ui.new`, `-v`/`ldd`, backup, restart, rollback) is
+  `deploy/UPDATE.md`.
 - Fix size must match bug size. Find the root cause, then make the SMALLEST
   change that removes it — a one-line guard beats a new subsystem. A small bug
   does not earn new columns, jobs, abstractions, config knobs or helper layers.

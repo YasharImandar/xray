@@ -156,7 +156,7 @@
       "resume": "ادامه",
       "accepted": "پذیرفته",
       "rejected": "رد شده",
-      "sniffHint": "مقصد، URL و متادیتای پکت از access log اکسری (SNI/هاست). محتوای TLS رمزگشایی نمی‌شود.",
+      "sniffHint": "مقصد (هاست/SNI) و متادیتای پکت از access log اکسری. مسیر و محتوای صفحه HTTPS رمزگشایی نمی‌شود (MITM نیست).",
       "inboundTag": "تگ اینباند",
       "hits": "ضربه",
       "details": "زمان",

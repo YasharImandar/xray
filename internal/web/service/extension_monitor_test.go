@@ -28,6 +28,21 @@ func TestPickExtensionInboundFallsBackToRemark(t *testing.T) {
 	}
 }
 
+func TestParseExtensionAccessLineHTTPProxySlashDest(t *testing.T) {
+	line := "2026/09/15 00:42:43.279538 from 91.133.220.81:14762 accepted //www.youtube.com:443 [in-2053-tcp >> direct]"
+	entry := parseExtensionAccessLine(line)
+	if entry.DestHost != "www.youtube.com" || entry.DestPort != "443" || entry.URL != "https://www.youtube.com" {
+		t.Fatalf("dest=%q port=%q url=%q", entry.DestHost, entry.DestPort, entry.URL)
+	}
+	if entry.Inbound != "in-2053-tcp" || entry.ClientIP != "91.133.220.81" {
+		t.Fatalf("inbound=%q ip=%q", entry.Inbound, entry.ClientIP)
+	}
+	inbound := &model.Inbound{Remark: "Extension", Port: 2053, Tag: "in-2053-tcp"}
+	if !lineMatchesExtensionInbound(line, entry, inbound) {
+		t.Fatal("tag in-2053-tcp must match")
+	}
+}
+
 func TestParseDestTargetHTTPAndHTTPS(t *testing.T) {
 	netw, host, port, destURL := parseDestTarget("tcp:example.com:443")
 	if netw != "tcp" || host != "example.com" || port != "443" || destURL != "https://example.com" {

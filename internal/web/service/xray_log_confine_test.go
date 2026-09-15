@@ -10,6 +10,28 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/util/json_util"
 )
 
+func TestEnsureXrayAccessLogTurnsNoneIntoFile(t *testing.T) {
+	out := ensureXrayAccessLog(json_util.RawMessage(`{"access":"none","loglevel":"warning"}`))
+	var got map[string]any
+	if err := json.Unmarshal(out, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got["access"] != "access.log" {
+		t.Fatalf("access = %v, want access.log", got["access"])
+	}
+	if got["loglevel"] != "warning" {
+		t.Fatalf("loglevel mutated: %v", got["loglevel"])
+	}
+	kept := ensureXrayAccessLog(json_util.RawMessage(`{"access":"/var/log/x-ui/custom.log"}`))
+	var keptMap map[string]any
+	if err := json.Unmarshal(kept, &keptMap); err != nil {
+		t.Fatal(err)
+	}
+	if keptMap["access"] != "/var/log/x-ui/custom.log" {
+		t.Fatalf("existing path rewritten: %v", keptMap["access"])
+	}
+}
+
 // A log path must never escape the log folder whatever case the key is written
 // in: xray-core matches JSON keys onto its struct fields case-insensitively.
 func TestResolveXrayLogPathsConfinesEveryKeyCase(t *testing.T) {

@@ -153,7 +153,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	xrayConfig.LogConfig = resolveXrayLogPaths(xrayConfig.LogConfig)
+	xrayConfig.LogConfig = resolveXrayLogPaths(ensureXrayAccessLog(xrayConfig.LogConfig))
 	xrayConfig.API = ensureAPIServices(xrayConfig.API)
 	xrayConfig.Policy = ensureStatsPolicy(xrayConfig.Policy)
 	xrayConfig.RouterConfig = stripDisabledRules(xrayConfig.RouterConfig)
@@ -1051,6 +1051,27 @@ func caseVariantKeys(parsed map[string]any, want string) []string {
 	}
 	slices.Sort(keys)
 	return keys
+}
+
+// ensureXrayAccessLog turns a missing/none access path into access.log so
+// the Monitoring page can read extension destinations. 'none' hid all traffic.
+func ensureXrayAccessLog(logCfg json_util.RawMessage) json_util.RawMessage {
+	parsed := map[string]any{}
+	if len(logCfg) > 0 {
+		if err := json.Unmarshal(logCfg, &parsed); err != nil {
+			return logCfg
+		}
+	}
+	v, _ := parsed["access"].(string)
+	if trimmed := strings.TrimSpace(v); trimmed != "" && !strings.EqualFold(trimmed, "none") {
+		return logCfg
+	}
+	parsed["access"] = "access.log"
+	out, err := json.Marshal(parsed)
+	if err != nil {
+		return logCfg
+	}
+	return out
 }
 
 func resolveXrayLogPaths(logCfg json_util.RawMessage) json_util.RawMessage {

@@ -18,7 +18,7 @@
     "tag": "api"
   }],
   "log": {
-    "access": "none",
+    "access": "access.log",
     "dnsLog": false,
     "error": "",
     "loglevel": "warning",

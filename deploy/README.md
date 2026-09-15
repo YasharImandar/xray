@@ -30,6 +30,9 @@ make run      # panel at http://127.0.0.1:2053 (admin/admin)
 `make linux-amd64` builds `/x-ui-linux-amd64` in local Docker. Copy that
 file to the server only when you are actually shipping — not to test.
 
+The full production swap (stage `x-ui.new`, verify, backup, restart,
+rollback) is in [`UPDATE.md`](UPDATE.md).
+
 | Path | What it is | Use when |
 | --- | --- | --- |
 | [`cloud-init/`](cloud-init/) | Generic cloud-init user-data (unattended `install.sh`) | Any cloud, no image build |

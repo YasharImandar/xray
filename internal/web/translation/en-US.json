@@ -156,7 +156,7 @@
       "resume": "Resume",
       "accepted": "Accepted",
       "rejected": "Rejected",
-      "sniffHint": "Logged destination, URL, and packet metadata from the Xray access log (SNI/host). TLS payload is not decrypted.",
+      "sniffHint": "Destination host/SNI and packet metadata from the Xray access log. HTTPS path and page body stay encrypted (this is not MITM).",
       "inboundTag": "Inbound tag",
       "hits": "Hits",
       "details": "Time",
