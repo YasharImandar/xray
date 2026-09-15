@@ -18,9 +18,11 @@ import {
   Tag,
   Tooltip,
   Typography,
+  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
+  CopyOutlined,
   DeleteOutlined,
   GlobalOutlined,
   LinkOutlined,
@@ -33,7 +35,7 @@ import {
   ThunderboltOutlined,
 } from '@ant-design/icons';
 
-import { HttpUtil, SizeFormatter } from '@/utils';
+import { ClipboardManager, HttpUtil, SizeFormatter } from '@/utils';
 import { parseMsg } from '@/utils/zodValidate';
 import { useTheme } from '@/hooks/useTheme';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -129,6 +131,7 @@ function CountryBeside({ country, countryCode }: { country?: string; countryCode
 
 export default function MonitoringPage() {
   const { t } = useTranslation();
+  const [messageApi, messageContextHolder] = message.useMessage();
   const { isDark, isUltra, antdThemeConfig } = useTheme();
   const { isMobile } = useMediaQuery();
   const { status } = useStatusQuery();
@@ -175,6 +178,17 @@ export default function MonitoringPage() {
     setSearchText(next);
     setLogPage(1);
     setClientPage(1);
+  }
+
+  // Copies the raw lines the snapshot holds, oldest first, so a filtered view
+  // yields exactly the matching lines a log file would.
+  async function copyLog() {
+    const text = logs
+      .map((row) => asText(row.raw))
+      .filter(Boolean)
+      .join('\n');
+    if (!text) return;
+    if (await ClipboardManager.copyText(text)) messageApi.success(t('copied'));
   }
 
   const siteItems: RankedItem[] = topDests.map((dest) => ({
@@ -478,6 +492,7 @@ export default function MonitoringPage() {
         <Layout className="content-shell">
           <Layout.Content id="content-layout" className="content-area">
             <div className="mon-page">
+              {messageContextHolder}
               <div className="mon-bar">
                 <Typography.Title level={4} className="mon-title">
                   {t('pages.monitoring.title')}
@@ -513,6 +528,14 @@ export default function MonitoringPage() {
                     onClick={() => void monitorQuery.refetch()}
                   >
                     {t('refresh')}
+                  </Button>
+                  <Button
+                    size="small"
+                    icon={<CopyOutlined />}
+                    disabled={logs.length === 0}
+                    onClick={() => void copyLog()}
+                  >
+                    {t('pages.monitoring.copyLog')}
                   </Button>
                   <Popconfirm
                     title={t('pages.monitoring.clearLogsConfirm')}

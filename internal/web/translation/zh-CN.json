@@ -174,6 +174,7 @@
       "details": "时间",
       "user": "用户",
       "outbound": "出站",
+      "copyLog": "复制日志",
       "clearLogs": "清除日志",
       "clearLogsConfirm": "清除所有 access log？新流量仍会继续记录。"
     },

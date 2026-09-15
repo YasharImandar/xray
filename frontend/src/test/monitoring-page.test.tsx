@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import MonitoringPage from '@/pages/monitoring/MonitoringPage';
-import { HttpUtil, Msg } from '@/utils';
+import { ClipboardManager, HttpUtil, Msg } from '@/utils';
 import { renderWithProviders } from './test-utils';
 
 vi.mock('@/api/queries/useAllSettings', () => ({
@@ -61,16 +61,15 @@ const INBOUND = {
 /** Mocks the snapshot endpoint, returning the query strings it was called with. */
 function mockMonitor(payload: Record<string, unknown>): string[] {
   const urls: string[] = [];
-  vi.mocked(HttpUtil.get).mockImplementation(
-    async (url: string, params?: Record<string, unknown>) => {
-      if (url.includes('/panel/api/server/history/')) return new Msg(true, '', []);
-      if (url.includes('/panel/api/server/extensionMonitor')) {
-        urls.push(String(params?.filter ?? ''));
-        return new Msg(true, '', payload);
-      }
-      return new Msg(false, 'unexpected get ' + url, null);
-    },
-  );
+  vi.mocked(HttpUtil.get).mockImplementation(async (url: string, params?: unknown) => {
+    if (url.includes('/panel/api/server/history/')) return new Msg(true, '', []);
+    if (url.includes('/panel/api/server/extensionMonitor')) {
+      const filter = (params as { filter?: unknown } | undefined)?.filter;
+      urls.push(String(filter ?? ''));
+      return new Msg(true, '', payload);
+    }
+    return new Msg(false, 'unexpected get ' + url, null);
+  });
   return urls;
 }
 
@@ -311,5 +310,56 @@ describe('MonitoringPage', () => {
       expect(within(logCard as HTMLElement).getByText('example.com/0')).toBeTruthy();
       expect(within(logCard as HTMLElement).getByText('example.com/24')).toBeTruthy();
     });
+  });
+
+  it('copies the loaded raw log lines, oldest first, to the clipboard', async () => {
+    const copySpy = vi.spyOn(ClipboardManager, 'copyText').mockResolvedValue(true);
+    mockMonitor({
+      found: true,
+      accessLogEnabled: true,
+      inbound: INBOUND,
+      logs: [
+        {
+          time: '2025-01-01T12:00:00.000Z',
+          user: '192.0.2.10',
+          email: '',
+          clientIp: '192.0.2.10',
+          url: 'https://a.example',
+          packet: 'a.example:443',
+          status: 'accepted',
+          event: 'direct',
+          raw: 'raw-line-1',
+        },
+        {
+          time: '2025-01-01T12:00:01.000Z',
+          user: '192.0.2.10',
+          email: '',
+          clientIp: '192.0.2.10',
+          url: 'https://b.example',
+          packet: 'b.example:443',
+          status: 'accepted',
+          event: 'direct',
+          raw: 'raw-line-2',
+        },
+      ],
+      clients: [],
+      topDests: [],
+      countries: [],
+      timeline: [],
+      stats: { eventCount: 2, uniqueDests: 2, uniqueIps: 1, online: 0, accepted: 2, logCount: 2 },
+    });
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <MemoryRouter>
+        <MonitoringPage />
+      </MemoryRouter>,
+    );
+
+    const copyBtn = await screen.findByRole('button', { name: /Copy log/ });
+    await user.click(copyBtn);
+
+    await waitFor(() => expect(copySpy).toHaveBeenCalledWith('raw-line-1\nraw-line-2'));
+    copySpy.mockRestore();
   });
 });
