@@ -72,6 +72,8 @@ describe('MonitoringPage', () => {
               email: 'alice@example.com',
               user: 'alice@example.com',
               clientIp: '192.0.2.10',
+              country: 'United States',
+              countryCode: 'US',
               clientPort: '54321',
               network: 'tcp',
               destHost: 'example.com',
@@ -92,6 +94,8 @@ describe('MonitoringPage', () => {
               email: 'alice@example.com',
               user: 'alice@example.com',
               clientIp: '192.0.2.10',
+              country: 'United States',
+              countryCode: 'US',
               enable: true,
               online: true,
               up: 1024,
@@ -131,6 +135,7 @@ describe('MonitoringPage', () => {
     expect(screen.getAllByText('tcp:example.com:443').length).toBeGreaterThan(0);
     expect(screen.getByText('extension · 2053')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Clear log/ })).toBeTruthy();
+    expect(screen.getAllByText(/United States/).length).toBeGreaterThan(0);
   });
 
   it('shows HTTP-proxy users by client IP when access log has no email', async () => {
@@ -154,6 +159,8 @@ describe('MonitoringPage', () => {
               time: '2026-09-15T12:00:00.000Z',
               user: '192.0.2.10',
               clientIp: '192.0.2.10',
+              country: 'Iran',
+              countryCode: 'IR',
               destHost: 'youtube.com',
               destPort: '443',
               url: 'https://youtube.com',
@@ -169,6 +176,8 @@ describe('MonitoringPage', () => {
               user: '192.0.2.10',
               email: '192.0.2.10',
               clientIp: '192.0.2.10',
+              country: 'Iran',
+              countryCode: 'IR',
               online: true,
               lastURL: 'https://youtube.com',
               recentDests: ['https://youtube.com'],
@@ -191,6 +200,7 @@ describe('MonitoringPage', () => {
       expect(screen.getAllByText('192.0.2.10').length).toBeGreaterThan(0);
     });
     expect(screen.getAllByText('https://youtube.com').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Iran/).length).toBeGreaterThan(0);
   });
 
   it('keeps a larger log page size after the monitor poll refreshes', async () => {

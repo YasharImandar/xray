@@ -144,6 +144,7 @@
       "destPort": "Cổng đích",
       "network": "Mạng",
       "clientIp": "IP khách",
+      "country": "Quốc gia",
       "rawLog": "Nhật ký thô",
       "packet": "Gói tin",
       "uniqueDests": "Đích duy nhất",

@@ -144,6 +144,7 @@
       "destPort": "宛先ポート",
       "network": "ネットワーク",
       "clientIp": "クライアント IP",
+      "country": "国",
       "rawLog": "生ログ",
       "packet": "パケット",
       "uniqueDests": "一意の宛先",

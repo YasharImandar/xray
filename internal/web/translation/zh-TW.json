@@ -144,6 +144,7 @@
       "destPort": "目的地連接埠",
       "network": "網路",
       "clientIp": "用戶端 IP",
+      "country": "國家",
       "rawLog": "原始日誌",
       "packet": "封包",
       "uniqueDests": "獨立目的地",

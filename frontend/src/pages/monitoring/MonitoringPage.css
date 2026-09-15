@@ -67,6 +67,12 @@
   width: 100%;
 }
 
+.monitoring-page .mon-country {
+  white-space: nowrap;
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+}
+
 .monitoring-page .mon-raw {
   margin-bottom: 0 !important;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

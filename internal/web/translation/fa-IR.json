@@ -144,6 +144,7 @@
       "destPort": "پورت مقصد",
       "network": "شبکه",
       "clientIp": "آی‌پی کلاینت",
+      "country": "کشور",
       "rawLog": "لاگ خام",
       "packet": "پکت",
       "uniqueDests": "مقصدهای یکتا",

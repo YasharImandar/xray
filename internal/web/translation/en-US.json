@@ -144,6 +144,7 @@
       "destPort": "Destination port",
       "network": "Network",
       "clientIp": "Client IP",
+      "country": "Country",
       "rawLog": "Raw log",
       "packet": "Packet",
       "uniqueDests": "Unique destinations",

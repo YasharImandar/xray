@@ -27,6 +27,8 @@ export const ExtensionMonitorSnapshotSchema = z
           user: z.string().optional(),
           email: z.string().optional(),
           clientIp: z.string().optional(),
+          country: z.string().optional(),
+          countryCode: z.string().optional(),
           url: z.string().optional(),
         })
         .loose(),
@@ -37,6 +39,8 @@ export const ExtensionMonitorSnapshotSchema = z
           email: z.string(),
           user: z.string().optional(),
           clientIp: z.string().optional(),
+          country: z.string().optional(),
+          countryCode: z.string().optional(),
           online: z.boolean().optional(),
           lastDest: z.string().optional(),
           lastURL: z.string().optional(),

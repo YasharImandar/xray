@@ -144,6 +144,7 @@
       "destPort": "Порт призначення",
       "network": "Мережа",
       "clientIp": "IP клієнта",
+      "country": "Країна",
       "rawLog": "Сирий лог",
       "packet": "Пакет",
       "uniqueDests": "Унікальні призначення",

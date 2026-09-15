@@ -11,6 +11,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/xray"
+	"github.com/mhsanaei/3x-ui/v3/internal/xray/geodata"
 )
 
 const (
@@ -53,6 +54,8 @@ type ExtensionLogEntry struct {
 	Event       string `json:"event" example:"direct"`
 	EventCode   int    `json:"eventCode" example:"0"`
 	User        string `json:"user" example:"alice@example.com"`
+	Country     string `json:"country" example:"Iran"`
+	CountryCode string `json:"countryCode" example:"IR"`
 	Raw         string `json:"raw" example:"2025/01/01 12:00:00.000000 from 192.0.2.10:54321 accepted tcp:example.com:443 [inbound-2053 >> direct] email: alice@example.com"`
 }
 
@@ -70,6 +73,8 @@ type ExtensionClientRow struct {
 	RecentDests []string `json:"recentDests" example:"[\"https://example.com\"]"`
 	User        string   `json:"user" example:"192.0.2.10"`
 	ClientIP    string   `json:"clientIp" example:"192.0.2.10"`
+	Country     string   `json:"country" example:"Iran"`
+	CountryCode string   `json:"countryCode" example:"IR"`
 	Hits        int      `json:"hits" example:"12"`
 }
 
@@ -393,7 +398,38 @@ func (s *ServerService) GetExtensionMonitor(count string, filter string) *Extens
 	out.Clients = clients
 	out.Inbound.Clients = len(clients)
 	out.Stats.Online = onlineCount
+	applyMonitorCountriesAt(out, xray.GetGeoipPath())
 	return out
+}
+
+func applyMonitorCountriesAt(out *ExtensionMonitorSnapshot, geoipPath string) {
+	if out == nil {
+		return
+	}
+	cache := map[string][2]string{}
+	lookup := func(ip string) (country, code string) {
+		ip = strings.TrimSpace(ip)
+		if ip == "" {
+			return "", ""
+		}
+		if hit, ok := cache[ip]; ok {
+			return hit[0], hit[1]
+		}
+		raw := geodata.LookupCountryCode(geoipPath, ip)
+		if raw == "" {
+			cache[ip] = [2]string{}
+			return "", ""
+		}
+		country, code = geodata.CountryName(raw), strings.ToUpper(raw)
+		cache[ip] = [2]string{country, code}
+		return country, code
+	}
+	for i := range out.Clients {
+		out.Clients[i].Country, out.Clients[i].CountryCode = lookup(out.Clients[i].ClientIP)
+	}
+	for i := range out.Logs {
+		out.Logs[i].Country, out.Logs[i].CountryCode = lookup(out.Logs[i].ClientIP)
+	}
 }
 
 func destLabel(entry ExtensionLogEntry) string {

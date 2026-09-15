@@ -46,6 +46,7 @@ import {
 import AppSidebar from '@/layouts/AppSidebar';
 import '@/pages/index/IndexPage.css';
 import './MonitoringPage.css';
+import { countryFlag } from './country';
 
 const POLL_MS = 3000;
 const LOG_COUNT = 400;
@@ -77,6 +78,18 @@ function formatWhen(value: string | undefined, empty: string): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleString();
+}
+
+function CountryBeside({ country, countryCode }: { country?: string; countryCode?: string }) {
+  const name = asText(country);
+  const flag = countryFlag(countryCode);
+  if (!flag && !name) return null;
+  return (
+    <span className="mon-country">
+      {flag ? `${flag} ` : ''}
+      {name || asText(countryCode).toUpperCase()}
+    </span>
+  );
 }
 
 function formatLastSeen(ts: number | undefined, empty: string): string {
@@ -138,14 +151,24 @@ export default function MonitoringPage() {
           <Typography.Text copyable>
             {asText(row.user) || asText(row.email) || t('none')}
           </Typography.Text>
+          <CountryBeside country={asText(row.country)} countryCode={asText(row.countryCode)} />
         </Space>
       ),
     },
     {
       title: t('pages.monitoring.clientIp'),
       dataIndex: 'clientIp',
-      width: 140,
-      render: (ip: string | undefined) => asText(ip) || t('none'),
+      width: 220,
+      render: (ip: string | undefined, row) => {
+        const addr = asText(ip);
+        if (!addr) return t('none');
+        return (
+          <Space size={6} wrap>
+            <Typography.Text copyable={{ text: addr }}>{addr}</Typography.Text>
+            <CountryBeside country={asText(row.country)} countryCode={asText(row.countryCode)} />
+          </Space>
+        );
+      },
     },
     {
       title: t('pages.monitoring.lastDest'),
@@ -206,7 +229,15 @@ export default function MonitoringPage() {
       render: (_, row) => {
         const ip = asText(row.clientIp);
         const port = asText(row.clientPort);
-        return ip ? (port ? `${ip}:${port}` : ip) : t('none');
+        if (!ip) return t('none');
+        return (
+          <Space size={6} wrap>
+            <Typography.Text copyable={{ text: port ? `${ip}:${port}` : ip }}>
+              {port ? `${ip}:${port}` : ip}
+            </Typography.Text>
+            <CountryBeside country={asText(row.country)} countryCode={asText(row.countryCode)} />
+          </Space>
+        );
       },
     },
     {
@@ -268,7 +299,16 @@ export default function MonitoringPage() {
           { label: t('pages.monitoring.destPort'), children: asText(row.destPort) || t('none') },
           { label: t('pages.monitoring.packet'), children: asText(row.packet) || t('none') },
           { label: t('pages.monitoring.network'), children: asText(row.network) || t('none') },
-          { label: t('pages.monitoring.clientIp'), children: asText(row.clientIp) || t('none') },
+          {
+            label: t('pages.monitoring.clientIp'),
+            children: asText(row.clientIp) || t('none'),
+          },
+          {
+            label: t('pages.monitoring.country'),
+            children: asText(row.country)
+              ? `${countryFlag(asText(row.countryCode))} ${asText(row.country)}`.trim()
+              : t('none'),
+          },
           { label: t('pages.monitoring.inboundTag'), children: asText(row.inbound) || t('none') },
           { label: t('pages.monitoring.outbound'), children: asText(row.outbound) || t('none') },
           {

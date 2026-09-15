@@ -144,6 +144,7 @@
       "destPort": "Порт назначения",
       "network": "Сеть",
       "clientIp": "IP клиента",
+      "country": "Страна",
       "rawLog": "Сырой лог",
       "packet": "Пакет",
       "uniqueDests": "Уникальные назначения",

@@ -1,12 +1,15 @@
 package service
 
 import (
+	"net/netip"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
+	xraygeodata "github.com/xtls/xray-core/common/geodata"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestClearAccessLogAtTruncatesFile(t *testing.T) {
@@ -171,6 +174,32 @@ func TestBuildMonitorClientsFromClientIPs(t *testing.T) {
 	}
 	if len(ipRow.RecentDests) != 2 || ipRow.RecentDests[0] != "https://fonts.gstatic.com" {
 		t.Fatalf("recent dests = %#v", ipRow.RecentDests)
+	}
+}
+
+func TestApplyMonitorCountriesAtSetsFlagFields(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "geoip.dat")
+	prefix := netip.MustParsePrefix("5.0.0.0/8")
+	data, err := proto.Marshal(&xraygeodata.GeoIPList{Entry: []*xraygeodata.GeoIP{{
+		Code: "ir",
+		Cidr: []*xraygeodata.CIDR{{Ip: prefix.Addr().AsSlice(), Prefix: uint32(prefix.Bits())}},
+	}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out := &ExtensionMonitorSnapshot{
+		Clients: []ExtensionClientRow{{ClientIP: "5.61.10.2"}},
+		Logs:    []ExtensionLogEntry{{ClientIP: "5.61.10.2"}},
+	}
+	applyMonitorCountriesAt(out, path)
+	if out.Clients[0].Country != "Iran" || out.Clients[0].CountryCode != "IR" {
+		t.Fatalf("client country = %#v", out.Clients[0])
+	}
+	if out.Logs[0].Country != "Iran" || out.Logs[0].CountryCode != "IR" {
+		t.Fatalf("log country = %#v", out.Logs[0])
 	}
 }
 

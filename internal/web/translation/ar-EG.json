@@ -144,6 +144,7 @@
       "destPort": "منفذ الوجهة",
       "network": "الشبكة",
       "clientIp": "IP العميل",
+      "country": "الدولة",
       "rawLog": "السجل الخام",
       "packet": "الحزمة",
       "uniqueDests": "وجهات فريدة",

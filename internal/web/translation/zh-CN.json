@@ -144,6 +144,7 @@
       "destPort": "目标端口",
       "network": "网络",
       "clientIp": "客户端 IP",
+      "country": "国家",
       "rawLog": "原始日志",
       "packet": "数据包",
       "uniqueDests": "独立目标",

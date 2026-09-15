@@ -144,6 +144,7 @@
       "destPort": "Porta de destino",
       "network": "Rede",
       "clientIp": "IP do cliente",
+      "country": "País",
       "rawLog": "Log bruto",
       "packet": "Pacote",
       "uniqueDests": "Destinos únicos",
