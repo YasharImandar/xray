@@ -45,9 +45,49 @@ export const ExtensionMonitorSnapshotSchema = z
           lastDest: z.string().optional(),
           lastURL: z.string().optional(),
           recentDests: z.array(z.string()).optional(),
+          hits: z.number().optional(),
+          rejected: z.number().optional(),
         })
         .loose(),
     ),
+    topDests: z
+      .array(
+        z
+          .object({
+            host: z.string(),
+            port: z.string().optional(),
+            url: z.string().optional(),
+            hits: z.number().optional(),
+            clients: z.number().optional(),
+            rejected: z.number().optional(),
+            lastSeen: z.number().optional(),
+          })
+          .loose(),
+      )
+      .optional(),
+    countries: z
+      .array(
+        z
+          .object({
+            code: z.string(),
+            name: z.string().optional(),
+            clients: z.number().optional(),
+            hits: z.number().optional(),
+          })
+          .loose(),
+      )
+      .optional(),
+    timeline: z
+      .array(
+        z
+          .object({
+            at: z.number(),
+            events: z.number().optional(),
+            rejected: z.number().optional(),
+          })
+          .loose(),
+      )
+      .optional(),
     stats: z
       .object({
         eventCount: z.number().optional(),
@@ -66,3 +106,6 @@ export const ExtensionMonitorSnapshotSchema = z
 export type ExtensionMonitorSnapshot = z.infer<typeof ExtensionMonitorSnapshotSchema>;
 export type ExtensionLogEntry = ExtensionMonitorSnapshot['logs'][number];
 export type ExtensionClientRow = ExtensionMonitorSnapshot['clients'][number];
+export type ExtensionDestRow = NonNullable<ExtensionMonitorSnapshot['topDests']>[number];
+export type ExtensionCountryRow = NonNullable<ExtensionMonitorSnapshot['countries']>[number];
+export type ExtensionBucket = NonNullable<ExtensionMonitorSnapshot['timeline']>[number];

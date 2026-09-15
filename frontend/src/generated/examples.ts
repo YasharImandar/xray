@@ -524,6 +524,11 @@ export const EXAMPLES: Record<string, unknown> = {
     "onlineCount": 1,
     "total": 2000
   },
+  "ExtensionBucket": {
+    "at": 1735680000000,
+    "events": 412,
+    "rejected": 3
+  },
   "ExtensionClientRow": {
     "clientIp": "192.0.2.10",
     "country": "Iran",
@@ -539,9 +544,25 @@ export const EXAMPLES: Record<string, unknown> = {
     "recentDests": [
       "https://example.com"
     ],
+    "rejected": 1,
     "total": 10737418240,
     "up": 1048576,
     "user": "192.0.2.10"
+  },
+  "ExtensionCountryRow": {
+    "clients": 280,
+    "code": "IR",
+    "hits": 91234,
+    "name": "Iran"
+  },
+  "ExtensionDestRow": {
+    "clients": 37,
+    "hits": 5794,
+    "host": "www.youtube.com",
+    "lastSeen": 1735680000000,
+    "port": "443",
+    "rejected": 0,
+    "url": "https://www.youtube.com"
   },
   "ExtensionInboundInfo": {
     "clients": 3,
@@ -594,9 +615,18 @@ export const EXAMPLES: Record<string, unknown> = {
         "recentDests": [
           "https://example.com"
         ],
+        "rejected": 1,
         "total": 10737418240,
         "up": 1048576,
         "user": "192.0.2.10"
+      }
+    ],
+    "countries": [
+      {
+        "clients": 280,
+        "code": "IR",
+        "hits": 91234,
+        "name": "Iran"
       }
     ],
     "found": true,
@@ -632,7 +662,25 @@ export const EXAMPLES: Record<string, unknown> = {
       "rejected": 11,
       "uniqueDests": 108,
       "uniqueIps": 319
-    }
+    },
+    "timeline": [
+      {
+        "at": 1735680000000,
+        "events": 412,
+        "rejected": 3
+      }
+    ],
+    "topDests": [
+      {
+        "clients": 37,
+        "hits": 5794,
+        "host": "www.youtube.com",
+        "lastSeen": 1735680000000,
+        "port": "443",
+        "rejected": 0,
+        "url": "https://www.youtube.com"
+      }
+    ]
   },
   "ExtensionMonitorStats": {
     "accepted": 107700,

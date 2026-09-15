@@ -152,7 +152,11 @@ func TestBuildMonitorClientsFromClientIPs(t *testing.T) {
 			URL:      "https://news.example",
 		},
 	}
-	rows, online := buildMonitorClients(entries, nil, map[string]struct{}{"alice@example.com": {}}, now)
+	scan := newExtensionScan(100)
+	for _, entry := range entries {
+		scan.add(entry)
+	}
+	rows, online := scan.clientRows(nil, map[string]struct{}{"alice@example.com": {}}, now)
 	if len(rows) != 3 {
 		t.Fatalf("clients = %d, want 3", len(rows))
 	}
@@ -195,14 +199,14 @@ func TestMonitorStatsCountWholeLogNotTheDisplayedPage(t *testing.T) {
 		t.Fatal(err)
 	}
 	inbound := &model.Inbound{Remark: "Extension", Port: 2053, Tag: "in-2053-tcp"}
-	entries := readExtensionAccessLog(logPath, inbound, "", nil, nil)
-	if len(entries) != 50 {
-		t.Fatalf("parsed %d lines, want 50", len(entries))
+	scan := scanExtensionAccessLog(logPath, inbound, "", nil, nil, 10)
+	if scan.total != 50 {
+		t.Fatalf("parsed %d lines, want 50", scan.total)
 	}
 
 	out := &ExtensionMonitorSnapshot{Inbound: &ExtensionInboundInfo{}}
-	clients, _ := buildMonitorClients(entries, nil, nil, time.Now())
-	fillMonitorStats(out, entries, clients, 0, 10)
+	clients, _ := scan.clientRows(nil, nil, time.Now())
+	fillMonitorStats(out, scan, clients, 0)
 
 	if out.Stats.EventCount != 50 {
 		t.Fatalf("eventCount = %d, want the whole log (50), not the page", out.Stats.EventCount)
@@ -218,6 +222,119 @@ func TestMonitorStatsCountWholeLogNotTheDisplayedPage(t *testing.T) {
 	}
 	if out.Logs[len(out.Logs)-1].DestHost != "host49.example" {
 		t.Fatalf("page must keep the newest lines, got %q", out.Logs[len(out.Logs)-1].DestHost)
+	}
+	if out.Logs[0].DestHost != "host40.example" {
+		t.Fatalf("page must start at the 10th-newest line, got %q", out.Logs[0].DestHost)
+	}
+}
+
+func TestEntryRingKeepsOnlyTheNewestLines(t *testing.T) {
+	ring := entryRing{buf: make([]ExtensionLogEntry, 0, 3)}
+	for _, host := range []string{"a", "b", "c", "d", "e"} {
+		ring.push(ExtensionLogEntry{DestHost: host})
+	}
+	got := make([]string, 0, 3)
+	for _, entry := range ring.ordered() {
+		got = append(got, entry.DestHost)
+	}
+	if strings.Join(got, ",") != "c,d,e" {
+		t.Fatalf("ring = %v, want the newest three in order", got)
+	}
+
+	// A zero-capacity ring is what a caller asking for no log lines gets.
+	empty := entryRing{buf: make([]ExtensionLogEntry, 0, 0)}
+	empty.push(ExtensionLogEntry{DestHost: "a"})
+	if len(empty.ordered()) != 0 {
+		t.Fatal("zero-capacity ring must stay empty")
+	}
+}
+
+func TestTopDestsRanksByHitsAndCountsClients(t *testing.T) {
+	scan := newExtensionScan(10)
+	add := func(ip, host string, rejected bool) {
+		entry := ExtensionLogEntry{
+			Time:     "2026-09-15T12:00:00Z",
+			ClientIP: ip,
+			DestHost: host,
+			DestPort: "443",
+			URL:      "https://" + host,
+		}
+		if rejected {
+			entry.Status = "rejected"
+		}
+		scan.add(entry)
+	}
+	add("1.1.1.1", "youtube.com", false)
+	add("2.2.2.2", "youtube.com", false)
+	add("1.1.1.1", "youtube.com", false)
+	add("3.3.3.3", "ads.example", true)
+
+	rows := scan.topDests(5)
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want 2", len(rows))
+	}
+	if rows[0].Host != "youtube.com" || rows[0].Hits != 3 || rows[0].Clients != 2 {
+		t.Fatalf("top row = %#v", rows[0])
+	}
+	if rows[0].URL != "https://youtube.com" || rows[0].LastSeen == 0 {
+		t.Fatalf("top row lost url/lastSeen: %#v", rows[0])
+	}
+	if rows[1].Host != "ads.example" || rows[1].Rejected != 1 {
+		t.Fatalf("rejected row = %#v", rows[1])
+	}
+	if got := scan.topDests(1); len(got) != 1 {
+		t.Fatalf("cap ignored, got %d rows", len(got))
+	}
+}
+
+func TestTimelineDownsamplesToRequestedPoints(t *testing.T) {
+	scan := newExtensionScan(1)
+	start := time.Date(2026, 9, 15, 0, 0, 0, 0, time.UTC)
+	// Ten hours of one event per minute: far more minutes than chart points.
+	for i := range 600 {
+		scan.add(ExtensionLogEntry{Time: start.Add(time.Duration(i) * time.Minute).Format(time.RFC3339Nano)})
+	}
+	buckets := scan.timeline(60)
+	if len(buckets) != 60 {
+		t.Fatalf("buckets = %d, want 60", len(buckets))
+	}
+	total := 0
+	for _, bucket := range buckets {
+		total += bucket.Events
+	}
+	if total != 600 {
+		t.Fatalf("timeline total = %d, want every event counted once", total)
+	}
+	if buckets[0].At != start.UnixMilli() {
+		t.Fatalf("first bucket at %d, want the first minute %d", buckets[0].At, start.UnixMilli())
+	}
+	if buckets[1].At-buckets[0].At != 10*60_000 {
+		t.Fatalf("bucket width = %dms, want 10 minutes", buckets[1].At-buckets[0].At)
+	}
+	if len(newExtensionScan(1).timeline(60)) != 0 {
+		t.Fatal("an empty log must yield an empty timeline")
+	}
+}
+
+func TestMonitorCountryRowsGroupClientsAndCap(t *testing.T) {
+	clients := []ExtensionClientRow{
+		{CountryCode: "IR", Country: "Iran", Hits: 10},
+		{CountryCode: "IR", Country: "Iran", Hits: 5},
+		{CountryCode: "US", Country: "United States", Hits: 100},
+		{CountryCode: "", Country: "", Hits: 7},
+	}
+	rows := monitorCountryRows(clients, 5)
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want 2 (unknown country dropped)", len(rows))
+	}
+	if rows[0].Code != "IR" || rows[0].Clients != 2 || rows[0].Hits != 15 {
+		t.Fatalf("first row = %#v, want IR ranked by client count", rows[0])
+	}
+	if rows[1].Code != "US" || rows[1].Clients != 1 {
+		t.Fatalf("second row = %#v", rows[1])
+	}
+	if got := monitorCountryRows(clients, 1); len(got) != 1 {
+		t.Fatalf("cap ignored, got %d rows", len(got))
 	}
 }
 

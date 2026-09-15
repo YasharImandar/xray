@@ -47,76 +47,82 @@ vi.mock('@/api/queries/useStatusQuery', async () => {
   };
 });
 
-describe('MonitoringPage', () => {
-  it('renders extension inbound traffic logs with dest URL and packet', async () => {
-    vi.mocked(HttpUtil.get).mockImplementation(async (url: string) => {
+const INBOUND = {
+  id: 1,
+  remark: 'extension',
+  tag: 'in-2053-tcp',
+  protocol: 'http',
+  port: 2053,
+  enable: true,
+  up: 1024,
+  down: 2048,
+};
+
+/** Mocks the snapshot endpoint, returning the query strings it was called with. */
+function mockMonitor(payload: Record<string, unknown>): string[] {
+  const urls: string[] = [];
+  vi.mocked(HttpUtil.get).mockImplementation(
+    async (url: string, params?: Record<string, unknown>) => {
       if (url.includes('/panel/api/server/history/')) return new Msg(true, '', []);
       if (url.includes('/panel/api/server/extensionMonitor')) {
-        return new Msg(true, '', {
-          found: true,
-          accessLogEnabled: true,
-          inbound: {
-            id: 1,
-            remark: 'extension',
-            tag: 'inbound-2053',
-            protocol: 'vless',
-            port: 2053,
-            enable: true,
-            up: 1024,
-            down: 2048,
-            clients: 1,
-          },
-          logs: [
-            {
-              time: '2025-01-01T12:00:00.000Z',
-              email: 'alice@example.com',
-              user: 'alice@example.com',
-              clientIp: '192.0.2.10',
-              country: 'United States',
-              countryCode: 'US',
-              clientPort: '54321',
-              network: 'tcp',
-              destHost: 'example.com',
-              destPort: '443',
-              destAddress: 'tcp:example.com:443',
-              url: 'https://example.com',
-              packet: 'tcp:example.com:443',
-              inbound: 'inbound-2053',
-              outbound: 'direct',
-              status: 'accepted',
-              event: 'direct',
-              eventCode: 0,
-              raw: '2025/01/01 12:00:00.000000 from 192.0.2.10:54321 accepted tcp:example.com:443 [inbound-2053 >> direct] email: alice@example.com',
-            },
-          ],
-          clients: [
-            {
-              email: 'alice@example.com',
-              user: 'alice@example.com',
-              clientIp: '192.0.2.10',
-              country: 'United States',
-              countryCode: 'US',
-              enable: true,
-              online: true,
-              up: 1024,
-              down: 2048,
-              lastDest: 'example.com:443',
-              lastURL: 'https://example.com',
-              recentDests: ['https://example.com'],
-              hits: 1,
-            },
-          ],
-          stats: {
-            eventCount: 1,
-            uniqueDests: 1,
-            uniqueIps: 1,
-            online: 1,
-            accepted: 1,
-            rejected: 0,
-          },
-        });
+        urls.push(String(params?.filter ?? ''));
+        return new Msg(true, '', payload);
       }
       return new Msg(false, 'unexpected get ' + url, null);
+    },
+  );
+  return urls;
+}
+
+describe('MonitoringPage', () => {
+  it('renders account-based traffic with the user and client IP split apart', async () => {
+    mockMonitor({
+      found: true,
+      accessLogEnabled: true,
+      inbound: { ...INBOUND, protocol: 'vless' },
+      logs: [
+        {
+          time: '2025-01-01T12:00:00.000Z',
+          email: 'alice@example.com',
+          user: 'alice@example.com',
+          clientIp: '192.0.2.10',
+          clientPort: '54321',
+          network: 'tcp',
+          destHost: 'example.com',
+          destPort: '443',
+          destAddress: 'tcp:example.com:443',
+          url: 'https://example.com',
+          packet: 'tcp:example.com:443',
+          country: 'United States',
+          countryCode: 'US',
+          inbound: 'in-2053-tcp',
+          outbound: 'direct',
+          status: 'accepted',
+          event: 'direct',
+          raw: 'from 192.0.2.10:54321 accepted tcp:example.com:443 [in-2053-tcp >> direct]',
+        },
+      ],
+      clients: [
+        {
+          email: 'alice@example.com',
+          user: 'alice@example.com',
+          clientIp: '192.0.2.10',
+          country: 'United States',
+          countryCode: 'US',
+          online: true,
+          up: 1024,
+          down: 2048,
+          lastURL: 'https://example.com',
+          recentDests: ['https://example.com'],
+          hits: 1,
+        },
+      ],
+      topDests: [
+        { host: 'example.com', port: '443', url: 'https://example.com', hits: 1, clients: 1 },
+      ],
+      countries: [{ code: 'US', name: 'United States', clients: 1, hits: 1 }],
+      timeline: [{ at: 1735732800000, events: 1, rejected: 0 }],
+      stats: { eventCount: 1, uniqueDests: 1, uniqueIps: 1, online: 1, accepted: 1, logCount: 1 },
     });
 
     renderWithProviders(
@@ -125,69 +131,61 @@ describe('MonitoringPage', () => {
       </MemoryRouter>,
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('Live')).toBeTruthy();
-    });
-    await waitFor(() => {
-      expect(screen.getAllByText('alice@example.com').length).toBeGreaterThan(0);
-    });
-    expect(screen.getAllByText('https://example.com').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('tcp:example.com:443').length).toBeGreaterThan(0);
-    expect(screen.getByText('extension · 2053')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Clear log/ })).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('Live')).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText('alice@example.com').length).toBeGreaterThan(0));
+
+    const clientCard = document.querySelector('.mon-clients-card');
+    const headers = within(clientCard as HTMLElement)
+      .getAllByRole('columnheader')
+      .map((th) => th.textContent);
+    expect(headers).toContain('User');
+    expect(headers).toContain('Client IP');
     expect(screen.getAllByText(/United States/).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Clear log/ })).toBeTruthy();
   });
 
-  it('shows HTTP-proxy users by client IP when access log has no email', async () => {
-    vi.mocked(HttpUtil.get).mockImplementation(async (url: string) => {
-      if (url.includes('/panel/api/server/history/')) return new Msg(true, '', []);
-      if (url.includes('/panel/api/server/extensionMonitor')) {
-        return new Msg(true, '', {
-          found: true,
-          accessLogEnabled: true,
-          inbound: {
-            id: 1,
-            remark: 'extension',
-            tag: 'in-2053-tcp',
-            protocol: 'http',
-            port: 2053,
-            enable: true,
-            clients: 1,
-          },
-          logs: [
-            {
-              time: '2026-09-15T12:00:00.000Z',
-              user: '192.0.2.10',
-              clientIp: '192.0.2.10',
-              country: 'Iran',
-              countryCode: 'IR',
-              destHost: 'youtube.com',
-              destPort: '443',
-              url: 'https://youtube.com',
-              packet: 'youtube.com:443',
-              inbound: 'in-2053-tcp',
-              status: 'accepted',
-              event: 'direct',
-              raw: 'from 192.0.2.10:1 accepted //youtube.com:443 [in-2053-tcp >> direct]',
-            },
-          ],
-          clients: [
-            {
-              user: '192.0.2.10',
-              email: '',
-              clientIp: '192.0.2.10',
-              country: 'Iran',
-              countryCode: 'IR',
-              online: true,
-              lastURL: 'https://youtube.com',
-              recentDests: ['https://youtube.com'],
-              hits: 4,
-            },
-          ],
-          stats: { eventCount: 1, uniqueDests: 1, uniqueIps: 1, online: 1 },
-        });
-      }
-      return new Msg(false, 'unexpected get ' + url, null);
+  it('identifies HTTP-proxy users by IP and drops the duplicate user column', async () => {
+    mockMonitor({
+      found: true,
+      accessLogEnabled: true,
+      inbound: INBOUND,
+      logs: [
+        {
+          time: '2026-09-15T12:00:00.000Z',
+          user: '192.0.2.10',
+          email: '',
+          clientIp: '192.0.2.10',
+          country: 'Iran',
+          countryCode: 'IR',
+          destHost: 'youtube.com',
+          destPort: '443',
+          url: 'https://youtube.com',
+          packet: 'youtube.com:443',
+          inbound: 'in-2053-tcp',
+          status: 'accepted',
+          event: 'direct',
+          raw: 'from 192.0.2.10:1 accepted //youtube.com:443 [in-2053-tcp >> direct]',
+        },
+      ],
+      clients: [
+        {
+          user: '192.0.2.10',
+          email: '',
+          clientIp: '192.0.2.10',
+          country: 'Iran',
+          countryCode: 'IR',
+          online: true,
+          lastURL: 'https://youtube.com',
+          recentDests: ['https://youtube.com'],
+          hits: 4,
+        },
+      ],
+      topDests: [
+        { host: 'youtube.com', port: '443', url: 'https://youtube.com', hits: 4, clients: 1 },
+      ],
+      countries: [{ code: 'IR', name: 'Iran', clients: 1, hits: 4 }],
+      timeline: [{ at: 1789473600000, events: 4, rejected: 0 }],
+      stats: { eventCount: 4, uniqueDests: 1, uniqueIps: 1, online: 1, accepted: 4, logCount: 1 },
     });
 
     renderWithProviders(
@@ -196,10 +194,7 @@ describe('MonitoringPage', () => {
       </MemoryRouter>,
     );
 
-    await waitFor(() => {
-      expect(screen.getAllByText('192.0.2.10').length).toBeGreaterThan(0);
-    });
-    expect(screen.getAllByText('https://youtube.com').length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getAllByText('192.0.2.10').length).toBeGreaterThan(0));
     expect(screen.getAllByText(/Iran/).length).toBeGreaterThan(0);
 
     // No accounts on an HTTP inbound, so the IP is the identity and must not
@@ -210,9 +205,62 @@ describe('MonitoringPage', () => {
       .map((th) => th.textContent);
     expect(headers).toContain('Client IP');
     expect(headers).not.toContain('User');
+    // Per-client byte counters stay zero on an HTTP inbound.
+    expect(headers).not.toContain('Traffic');
   });
 
-  it('keeps a larger log page size after the monitor poll refreshes', async () => {
+  it('ranks the busiest sites and filters the snapshot when one is clicked', async () => {
+    const filters = mockMonitor({
+      found: true,
+      accessLogEnabled: true,
+      inbound: INBOUND,
+      logs: [],
+      clients: [],
+      topDests: [
+        {
+          host: 'www.youtube.com',
+          port: '443',
+          url: 'https://www.youtube.com',
+          hits: 5794,
+          clients: 37,
+        },
+        {
+          host: 'ads.example',
+          port: '443',
+          url: 'https://ads.example',
+          hits: 12,
+          clients: 2,
+          rejected: 12,
+        },
+      ],
+      countries: [
+        { code: 'IR', name: 'Iran', clients: 280, hits: 91234 },
+        { code: 'US', name: 'United States', clients: 12, hits: 640 },
+      ],
+      timeline: [{ at: 1789473600000, events: 5794, rejected: 12 }],
+      stats: { eventCount: 107711, uniqueDests: 108, uniqueIps: 319, online: 11, rejected: 12 },
+    });
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <MemoryRouter>
+        <MonitoringPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(screen.getByText('www.youtube.com')).toBeTruthy());
+    // KPI tiles report the whole log, compacted.
+    expect(screen.getByText('107.7K')).toBeTruthy();
+    expect(screen.getByText('319')).toBeTruthy();
+    expect(screen.getByText(/🇮🇷 Iran/)).toBeTruthy();
+
+    await user.click(screen.getByText('www.youtube.com'));
+
+    await waitFor(() => expect(filters).toContain('www.youtube.com'));
+    expect(screen.getByText(/Filtered: www\.youtube\.com/)).toBeTruthy();
+  });
+
+  it('keeps a larger request page size after the monitor poll refreshes', async () => {
     const logs = Array.from({ length: 25 }, (_, i) => ({
       time: `2025-01-01T12:00:${String(i).padStart(2, '0')}.000Z`,
       user: 'alice@example.com',
@@ -224,25 +272,22 @@ describe('MonitoringPage', () => {
       event: 'direct',
       raw: `raw-line-${i}`,
     }));
-    vi.mocked(HttpUtil.get).mockImplementation(async (url: string) => {
-      if (url.includes('/panel/api/server/history/')) return new Msg(true, '', []);
-      if (url.includes('/panel/api/server/extensionMonitor')) {
-        return new Msg(true, '', {
-          found: true,
-          accessLogEnabled: true,
-          inbound: { id: 1, remark: 'extension', tag: 'inbound-2053', port: 2053, enable: true },
-          logs,
-          clients: [],
-          stats: {
-            eventCount: 107711,
-            uniqueDests: 108,
-            uniqueIps: 319,
-            online: 11,
-            logCount: 25,
-          },
-        });
-      }
-      return new Msg(false, 'unexpected get ' + url, null);
+    mockMonitor({
+      found: true,
+      accessLogEnabled: true,
+      inbound: INBOUND,
+      logs,
+      clients: [],
+      topDests: [],
+      countries: [],
+      timeline: [],
+      stats: {
+        eventCount: 107711,
+        uniqueDests: 108,
+        uniqueIps: 319,
+        online: 11,
+        logCount: 25,
+      },
     });
 
     const user = userEvent.setup();
@@ -252,16 +297,10 @@ describe('MonitoringPage', () => {
       </MemoryRouter>,
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('https://example.com/24')).toBeTruthy();
-    });
+    await waitFor(() => expect(screen.getByText('example.com/24')).toBeTruthy());
     const logCard = document.querySelector('.mon-log-card');
     expect(logCard).toBeTruthy();
     expect(within(logCard as HTMLElement).getAllByRole('row').length).toBeLessThan(25 + 2);
-
-    // The cards count the whole access log; only the table is a page of it.
-    expect(screen.getByText('107,711')).toBeTruthy();
-    expect(screen.getByText('319')).toBeTruthy();
     expect(within(logCard as HTMLElement).getByText(/25 \/ 107,711/)).toBeTruthy();
 
     const sizeTrigger = within(logCard as HTMLElement).getByRole('combobox');
@@ -269,8 +308,8 @@ describe('MonitoringPage', () => {
     await user.click(await screen.findByTitle('50 / page'));
 
     await waitFor(() => {
-      expect(within(logCard as HTMLElement).getByText('https://example.com/0')).toBeTruthy();
-      expect(within(logCard as HTMLElement).getByText('https://example.com/24')).toBeTruthy();
+      expect(within(logCard as HTMLElement).getByText('example.com/0')).toBeTruthy();
+      expect(within(logCard as HTMLElement).getByText('example.com/24')).toBeTruthy();
     });
   });
 });

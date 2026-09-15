@@ -480,6 +480,12 @@ export interface ClientsSummary {
   total: number;
 }
 
+export interface ExtensionBucket {
+  at: number;
+  events: number;
+  rejected: number;
+}
+
 export interface ExtensionClientRow {
   clientIp: string;
   country: string;
@@ -493,9 +499,27 @@ export interface ExtensionClientRow {
   lastURL: string;
   online: boolean;
   recentDests: string[];
+  rejected: number;
   total: number;
   up: number;
   user: string;
+}
+
+export interface ExtensionCountryRow {
+  clients: number;
+  code: string;
+  hits: number;
+  name: string;
+}
+
+export interface ExtensionDestRow {
+  clients: number;
+  hits: number;
+  host: string;
+  lastSeen: number;
+  port: string;
+  rejected: number;
+  url: string;
 }
 
 export interface ExtensionInboundInfo {
@@ -536,10 +560,13 @@ export interface ExtensionMonitorSnapshot {
   accessLogEnabled: boolean;
   accessLogPath: string;
   clients: ExtensionClientRow[];
+  countries: ExtensionCountryRow[];
   found: boolean;
   inbound?: ExtensionInboundInfo | null;
   logs: ExtensionLogEntry[];
   stats: ExtensionMonitorStats;
+  timeline: ExtensionBucket[];
+  topDests: ExtensionDestRow[];
 }
 
 export interface ExtensionMonitorStats {

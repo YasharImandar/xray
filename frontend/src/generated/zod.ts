@@ -507,6 +507,13 @@ export const ClientsSummarySchema = z.object({
 });
 export type ClientsSummary = z.infer<typeof ClientsSummarySchema>;
 
+export const ExtensionBucketSchema = z.object({
+  at: z.number().int(),
+  events: z.number().int(),
+  rejected: z.number().int(),
+});
+export type ExtensionBucket = z.infer<typeof ExtensionBucketSchema>;
+
 export const ExtensionClientRowSchema = z.object({
   clientIp: z.string(),
   country: z.string(),
@@ -520,11 +527,31 @@ export const ExtensionClientRowSchema = z.object({
   lastURL: z.string(),
   online: z.boolean(),
   recentDests: z.array(z.string()),
+  rejected: z.number().int(),
   total: z.number().int(),
   up: z.number().int(),
   user: z.string(),
 });
 export type ExtensionClientRow = z.infer<typeof ExtensionClientRowSchema>;
+
+export const ExtensionCountryRowSchema = z.object({
+  clients: z.number().int(),
+  code: z.string(),
+  hits: z.number().int(),
+  name: z.string(),
+});
+export type ExtensionCountryRow = z.infer<typeof ExtensionCountryRowSchema>;
+
+export const ExtensionDestRowSchema = z.object({
+  clients: z.number().int(),
+  hits: z.number().int(),
+  host: z.string(),
+  lastSeen: z.number().int(),
+  port: z.string(),
+  rejected: z.number().int(),
+  url: z.string(),
+});
+export type ExtensionDestRow = z.infer<typeof ExtensionDestRowSchema>;
 
 export const ExtensionInboundInfoSchema = z.object({
   clients: z.number().int(),
@@ -566,10 +593,13 @@ export const ExtensionMonitorSnapshotSchema = z.object({
   accessLogEnabled: z.boolean(),
   accessLogPath: z.string(),
   clients: z.array(z.lazy(() => ExtensionClientRowSchema)),
+  countries: z.array(z.lazy(() => ExtensionCountryRowSchema)),
   found: z.boolean(),
   inbound: z.lazy(() => ExtensionInboundInfoSchema).nullable().optional(),
   logs: z.array(z.lazy(() => ExtensionLogEntrySchema)),
   stats: z.lazy(() => ExtensionMonitorStatsSchema),
+  timeline: z.array(z.lazy(() => ExtensionBucketSchema)),
+  topDests: z.array(z.lazy(() => ExtensionDestRowSchema)),
 });
 export type ExtensionMonitorSnapshot = z.infer<typeof ExtensionMonitorSnapshotSchema>;
 

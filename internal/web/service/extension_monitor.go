@@ -21,6 +21,9 @@ const (
 	extensionMonitorDefault = 400
 	extensionOnlineWindow   = 2 * time.Minute
 	extensionRecentDests    = 8
+	extensionTopDests       = 15
+	extensionTopCountries   = 12
+	extensionTimelinePoints = 96
 )
 
 // ExtensionInboundInfo is the panel inbound this monitor is pinned to.
@@ -76,6 +79,34 @@ type ExtensionClientRow struct {
 	Country     string   `json:"country" example:"Iran"`
 	CountryCode string   `json:"countryCode" example:"IR"`
 	Hits        int      `json:"hits" example:"12"`
+	Rejected    int      `json:"rejected" example:"1"`
+}
+
+// ExtensionDestRow is one destination aggregated over the whole access log.
+type ExtensionDestRow struct {
+	Host     string `json:"host" example:"www.youtube.com"`
+	Port     string `json:"port" example:"443"`
+	URL      string `json:"url" example:"https://www.youtube.com"`
+	Hits     int    `json:"hits" example:"5794"`
+	Clients  int    `json:"clients" example:"37"`
+	Rejected int    `json:"rejected" example:"0"`
+	LastSeen int64  `json:"lastSeen" example:"1735680000000"`
+}
+
+// ExtensionCountryRow is one client country aggregated over the whole log.
+type ExtensionCountryRow struct {
+	Code    string `json:"code" example:"IR"`
+	Name    string `json:"name" example:"Iran"`
+	Clients int    `json:"clients" example:"280"`
+	Hits    int    `json:"hits" example:"91234"`
+}
+
+// ExtensionBucket is one slice of the activity timeline, downsampled so the
+// chart stays a fixed width however long the log has been accumulating.
+type ExtensionBucket struct {
+	At       int64 `json:"at" example:"1735680000000"`
+	Events   int   `json:"events" example:"412"`
+	Rejected int   `json:"rejected" example:"3"`
 }
 
 // ExtensionMonitorStats tallies the whole access log, not the page of lines
@@ -100,6 +131,9 @@ type ExtensionMonitorSnapshot struct {
 	Inbound          *ExtensionInboundInfo `json:"inbound"`
 	Logs             []ExtensionLogEntry   `json:"logs"`
 	Clients          []ExtensionClientRow  `json:"clients"`
+	TopDests         []ExtensionDestRow    `json:"topDests"`
+	Countries        []ExtensionCountryRow `json:"countries"`
+	Timeline         []ExtensionBucket     `json:"timeline"`
 	Stats            ExtensionMonitorStats `json:"stats"`
 }
 
@@ -337,8 +371,11 @@ func (s *ServerService) ClearAccessLog() error {
 // "extension" or port 2053, plus that inbound's clients and a window tally.
 func (s *ServerService) GetExtensionMonitor(count string, filter string) *ExtensionMonitorSnapshot {
 	out := &ExtensionMonitorSnapshot{
-		Logs:    []ExtensionLogEntry{},
-		Clients: []ExtensionClientRow{},
+		Logs:      []ExtensionLogEntry{},
+		Clients:   []ExtensionClientRow{},
+		TopDests:  []ExtensionDestRow{},
+		Countries: []ExtensionCountryRow{},
+		Timeline:  []ExtensionBucket{},
 	}
 	enabled, err := s.settingService.GetAccessLogEnable()
 	if err == nil {
@@ -375,47 +412,74 @@ func (s *ServerService) GetExtensionMonitor(count string, filter string) *Extens
 	needle := strings.ToLower(strings.TrimSpace(filter))
 	freedoms, blackholes := s.GetDefaultLogOutboundTags()
 
-	var entries []ExtensionLogEntry
-	if path != "" && path != "none" && path != "stdout" && path != "stderr" {
-		entries = readExtensionAccessLog(path, inbound, needle, freedoms, blackholes)
+	scan := newExtensionScan(limit)
+	if !accessLogDisabled(path) {
+		scan = scanExtensionAccessLog(path, inbound, needle, freedoms, blackholes, limit)
 	}
 
-	clients, onlineCount := buildMonitorClients(entries, inbound.ClientStats, onlines, time.Now())
-	fillMonitorStats(out, entries, clients, onlineCount, limit)
+	clients, onlineCount := scan.clientRows(inbound.ClientStats, onlines, time.Now())
+	fillMonitorStats(out, scan, clients, onlineCount)
 	applyMonitorCountriesAt(out, xray.GetGeoipPath())
 	return out
 }
 
-// fillMonitorStats tallies every parsed event, then trims Logs to the newest
-// limit lines. The tally deliberately runs before the trim: the access log
-// holds orders of magnitude more events than the table shows, so counting the
-// page made Events and Accepted sit permanently at the display limit.
-func fillMonitorStats(out *ExtensionMonitorSnapshot, entries []ExtensionLogEntry, clients []ExtensionClientRow, onlineCount, limit int) {
-	dests := map[string]struct{}{}
-	for _, entry := range entries {
-		if entry.DestHost != "" {
-			dests[strings.ToLower(entry.DestHost)+":"+entry.DestPort] = struct{}{}
-		}
-		if entry.Status == "rejected" {
-			out.Stats.Rejected++
-		} else {
-			out.Stats.Accepted++
-		}
-	}
-	out.Stats.EventCount = len(entries)
-	out.Stats.UniqueDests = len(dests)
+// fillMonitorStats reports the whole-log tally the scan accumulated, while Logs
+// carries only the retained page of lines. Counting the page instead made
+// Events and Accepted sit permanently at the display limit.
+func fillMonitorStats(out *ExtensionMonitorSnapshot, scan *extensionScan, clients []ExtensionClientRow, onlineCount int) {
+	out.Stats.EventCount = scan.total
+	out.Stats.Accepted = scan.accepted
+	out.Stats.Rejected = scan.rejected
+	out.Stats.UniqueDests = len(scan.dests)
 	out.Stats.UniqueIps = len(clients)
 	out.Stats.Online = onlineCount
 
-	if len(entries) > limit {
-		entries = entries[len(entries)-limit:]
-	}
-	out.Logs = entries
-	out.Stats.LogCount = len(entries)
+	out.Logs = scan.ring.ordered()
+	out.Stats.LogCount = len(out.Logs)
 	out.Clients = clients
+	out.TopDests = scan.topDests(extensionTopDests)
+	out.Timeline = scan.timeline(extensionTimelinePoints)
 	if out.Inbound != nil {
 		out.Inbound.Clients = len(clients)
 	}
+}
+
+// monitorCountryRows groups the client rows by country once their codes are
+// resolved, busiest country first.
+func monitorCountryRows(clients []ExtensionClientRow, n int) []ExtensionCountryRow {
+	byCode := map[string]*ExtensionCountryRow{}
+	order := make([]string, 0)
+	for _, client := range clients {
+		code := client.CountryCode
+		if code == "" {
+			continue
+		}
+		row, ok := byCode[code]
+		if !ok {
+			row = &ExtensionCountryRow{Code: code, Name: client.Country}
+			byCode[code] = row
+			order = append(order, code)
+		}
+		row.Clients++
+		row.Hits += client.Hits
+	}
+	rows := make([]ExtensionCountryRow, 0, len(order))
+	for _, code := range order {
+		rows = append(rows, *byCode[code])
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		if rows[i].Clients != rows[j].Clients {
+			return rows[i].Clients > rows[j].Clients
+		}
+		if rows[i].Hits != rows[j].Hits {
+			return rows[i].Hits > rows[j].Hits
+		}
+		return rows[i].Code < rows[j].Code
+	})
+	if n > 0 && len(rows) > n {
+		rows = rows[:n]
+	}
+	return rows
 }
 
 func applyMonitorCountriesAt(out *ExtensionMonitorSnapshot, geoipPath string) {
@@ -446,6 +510,7 @@ func applyMonitorCountriesAt(out *ExtensionMonitorSnapshot, geoipPath string) {
 	for i := range out.Logs {
 		out.Logs[i].Country, out.Logs[i].CountryCode = lookup(out.Logs[i].ClientIP)
 	}
+	out.Countries = monitorCountryRows(out.Clients, extensionTopCountries)
 }
 
 func destLabel(entry ExtensionLogEntry) string {
@@ -507,6 +572,7 @@ type monitorUserAgg struct {
 	email    string
 	clientIP string
 	hits     int
+	rejected int
 	lastDest string
 	lastURL  string
 	lastSeen time.Time
@@ -517,21 +583,106 @@ type monitorUserAgg struct {
 	total    int64
 }
 
-func buildMonitorClients(entries []ExtensionLogEntry, stats []xray.ClientTraffic, onlines map[string]struct{}, now time.Time) ([]ExtensionClientRow, int) {
-	aggs := map[string]*monitorUserAgg{}
-	order := make([]string, 0)
-	for _, entry := range entries {
-		key := monitorUserKey(entry)
-		if key == "" {
-			continue
+type monitorDestAgg struct {
+	host     string
+	port     string
+	url      string
+	hits     int
+	rejected int
+	lastSeen time.Time
+	clients  map[string]struct{}
+}
+
+type monitorBucket struct {
+	events   int
+	rejected int
+}
+
+// entryRing keeps only the newest `cap` log lines. The access log routinely
+// holds six figures of events while the table shows a few hundred, so holding
+// every parsed entry was the page's real cost on a small VPS.
+type entryRing struct {
+	buf  []ExtensionLogEntry
+	next int
+	full bool
+}
+
+func (r *entryRing) push(entry ExtensionLogEntry) {
+	if cap(r.buf) == 0 {
+		return
+	}
+	if !r.full {
+		r.buf = append(r.buf, entry)
+		if len(r.buf) == cap(r.buf) {
+			r.full = true
+			r.next = 0
 		}
-		agg, ok := aggs[key]
+		return
+	}
+	r.buf[r.next] = entry
+	r.next = (r.next + 1) % len(r.buf)
+}
+
+// ordered returns the retained entries oldest first.
+func (r *entryRing) ordered() []ExtensionLogEntry {
+	if !r.full {
+		out := make([]ExtensionLogEntry, len(r.buf))
+		copy(out, r.buf)
+		return out
+	}
+	out := make([]ExtensionLogEntry, 0, len(r.buf))
+	out = append(out, r.buf[r.next:]...)
+	return append(out, r.buf[:r.next]...)
+}
+
+// extensionScan accumulates every aggregate the Monitoring page needs in a
+// single pass, so the whole log is counted without ever holding it in memory.
+type extensionScan struct {
+	ring      entryRing
+	total     int
+	accepted  int
+	rejected  int
+	users     map[string]*monitorUserAgg
+	userOrder []string
+	dests     map[string]*monitorDestAgg
+	destOrder []string
+	buckets   map[int64]*monitorBucket
+}
+
+func newExtensionScan(limit int) *extensionScan {
+	if limit < 0 {
+		limit = 0
+	}
+	return &extensionScan{
+		ring:    entryRing{buf: make([]ExtensionLogEntry, 0, limit)},
+		users:   map[string]*monitorUserAgg{},
+		dests:   map[string]*monitorDestAgg{},
+		buckets: map[int64]*monitorBucket{},
+	}
+}
+
+func (sc *extensionScan) add(entry ExtensionLogEntry) {
+	sc.ring.push(entry)
+	sc.total++
+	isRejected := entry.Status == "rejected"
+	if isRejected {
+		sc.rejected++
+	} else {
+		sc.accepted++
+	}
+	at := entryTime(entry)
+
+	if key := monitorUserKey(entry); key != "" {
+		agg, ok := sc.users[key]
 		if !ok {
 			agg = &monitorUserAgg{key: key, enable: true}
-			aggs[key] = agg
-			order = append(order, key)
+			sc.users[key] = agg
+			sc.userOrder = append(sc.userOrder, key)
 		}
 		agg.hits++
+		if isRejected {
+			agg.rejected++
+		}
 		if email := strings.TrimSpace(entry.Email); email != "" {
 			agg.email = email
 		}
@@ -541,10 +692,122 @@ func buildMonitorClients(entries []ExtensionLogEntry, stats []xray.ClientTraffic
 		agg.lastDest = destLabel(entry)
 		agg.lastURL = entry.URL
 		agg.dests = pushRecentDest(agg.dests, destPref(entry))
-		if ts := entryTime(entry); !ts.IsZero() {
-			agg.lastSeen = ts
+		if !at.IsZero() {
+			agg.lastSeen = at
 		}
 	}
+
+	if entry.DestHost != "" {
+		key := strings.ToLower(entry.DestHost) + ":" + entry.DestPort
+		dest, ok := sc.dests[key]
+		if !ok {
+			dest = &monitorDestAgg{
+				host:    entry.DestHost,
+				port:    entry.DestPort,
+				clients: map[string]struct{}{},
+			}
+			sc.dests[key] = dest
+			sc.destOrder = append(sc.destOrder, key)
+		}
+		dest.hits++
+		if isRejected {
+			dest.rejected++
+		}
+		if url := strings.TrimSpace(entry.URL); url != "" {
+			dest.url = url
+		}
+		if ip := strings.TrimSpace(entry.ClientIP); ip != "" {
+			dest.clients[ip] = struct{}{}
+		}
+		if !at.IsZero() && at.After(dest.lastSeen) {
+			dest.lastSeen = at
+		}
+	}
+
+	if !at.IsZero() {
+		minute := at.Unix() / 60
+		bucket, ok := sc.buckets[minute]
+		if !ok {
+			bucket = &monitorBucket{}
+			sc.buckets[minute] = bucket
+		}
+		bucket.events++
+		if isRejected {
+			bucket.rejected++
+		}
+	}
+}
+
+// topDests returns the busiest destinations, most hits first.
+func (sc *extensionScan) topDests(n int) []ExtensionDestRow {
+	rows := make([]ExtensionDestRow, 0, len(sc.destOrder))
+	for _, key := range sc.destOrder {
+		dest := sc.dests[key]
+		row := ExtensionDestRow{
+			Host:     dest.host,
+			Port:     dest.port,
+			URL:      dest.url,
+			Hits:     dest.hits,
+			Clients:  len(dest.clients),
+			Rejected: dest.rejected,
+		}
+		if !dest.lastSeen.IsZero() {
+			row.LastSeen = dest.lastSeen.UnixMilli()
+		}
+		rows = append(rows, row)
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		if rows[i].Hits != rows[j].Hits {
+			return rows[i].Hits > rows[j].Hits
+		}
+		return rows[i].Host < rows[j].Host
+	})
+	if n > 0 && len(rows) > n {
+		rows = rows[:n]
+	}
+	return rows
+}
+
+// timeline folds the per-minute counters into at most `points` even slices, so
+// a log covering ten minutes and one covering ten days both render as a chart
+// of the same width.
+func (sc *extensionScan) timeline(points int) []ExtensionBucket {
+	if len(sc.buckets) == 0 || points <= 0 {
+		return []ExtensionBucket{}
+	}
+	first, last := int64(0), int64(0)
+	for minute := range sc.buckets {
+		if first == 0 || minute < first {
+			first = minute
+		}
+		if minute > last {
+			last = minute
+		}
+	}
+	span := last - first + 1
+	group := (span + int64(points) - 1) / int64(points)
+	if group < 1 {
+		group = 1
+	}
+	slots := (span + group - 1) / group
+	out := make([]ExtensionBucket, slots)
+	for i := range out {
+		out[i].At = (first + int64(i)*group) * 60_000
+	}
+	for minute, bucket := range sc.buckets {
+		i := (minute - first) / group
+		if i < 0 || i >= slots {
+			continue
+		}
+		out[i].Events += bucket.events
+		out[i].Rejected += bucket.rejected
+	}
+	return out
+}
+
+func (sc *extensionScan) clientRows(stats []xray.ClientTraffic, onlines map[string]struct{}, now time.Time) ([]ExtensionClientRow, int) {
+	aggs := sc.users
+	order := sc.userOrder
 	for _, st := range stats {
 		email := strings.TrimSpace(st.Email)
 		if email == "" {
@@ -585,6 +848,7 @@ func buildMonitorClients(entries []ExtensionLogEntry, stats []xray.ClientTraffic
 			LastURL:     agg.lastURL,
 			RecentDests: reverseStrings(agg.dests),
 			Hits:        agg.hits,
+			Rejected:    agg.rejected,
 		}
 		// Email stays empty for a row the access log only knows by IP, so the
 		// UI can tell an actual account apart from an IP-derived identity.
@@ -611,14 +875,16 @@ func buildMonitorClients(entries []ExtensionLogEntry, stats []xray.ClientTraffic
 	return rows, onlineCount
 }
 
-func readExtensionAccessLog(path string, inbound *model.Inbound, needle string, freedoms, blackholes []string) []ExtensionLogEntry {
+// scanExtensionAccessLog streams the access log once, aggregating as it goes
+// and retaining only the newest `limit` lines for the table.
+func scanExtensionAccessLog(path string, inbound *model.Inbound, needle string, freedoms, blackholes []string, limit int) *extensionScan {
+	scan := newExtensionScan(limit)
 	file, err := os.Open(path)
 	if err != nil {
-		return nil
+		return scan
 	}
 	defer file.Close()
 
-	var entries []ExtensionLogEntry
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	for scanner.Scan() {
@@ -634,7 +900,7 @@ func readExtensionAccessLog(path string, inbound *model.Inbound, needle string, 
 			continue
 		}
 		entry.Event, entry.EventCode = classifyExtensionEvent(line, freedoms, blackholes)
-		entries = append(entries, entry)
+		scan.add(entry)
 	}
-	return entries
+	return scan
 }

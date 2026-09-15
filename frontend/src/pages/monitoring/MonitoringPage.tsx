@@ -14,9 +14,9 @@ import {
   Result,
   Row,
   Space,
-  Statistic,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -27,6 +27,8 @@ import {
   PauseCircleOutlined,
   PlayCircleOutlined,
   ReloadOutlined,
+  StopOutlined,
+  SwapOutlined,
   TeamOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
@@ -46,12 +48,23 @@ import {
 import AppSidebar from '@/layouts/AppSidebar';
 import '@/pages/index/IndexPage.css';
 import './MonitoringPage.css';
-import { countryFlag } from './country';
+import ActivityChart from './ActivityChart';
+import RankedList, { type RankedItem } from './RankedList';
+import {
+  asNumber,
+  asText,
+  compactNumber,
+  countryFlag,
+  formatAgo,
+  formatLastSeen,
+  formatWhen,
+  shortHost,
+} from './format';
 
 const POLL_MS = 3000;
 const LOG_COUNT = 400;
 const LOG_PAGE_SIZES = [20, 50, 100, 200, 400];
-const CLIENT_PAGE_SIZES = [8, 20, 50, 100];
+const CLIENT_PAGE_SIZES = [10, 25, 50, 100];
 
 const XRAY_STATE_KEYS: Record<string, string> = {
   running: 'pages.index.xrayStatusRunning',
@@ -65,19 +78,41 @@ const EVENT_COLOR: Record<string, string> = {
   proxy: 'blue',
 };
 
-function asText(value: unknown): string {
-  return typeof value === 'string' ? value : '';
+async function fetchExtensionMonitor(filter: string): Promise<ExtensionMonitorSnapshot> {
+  const msg = await HttpUtil.get(
+    '/panel/api/server/extensionMonitor',
+    { count: LOG_COUNT, filter },
+    { silent: true },
+  );
+  if (!msg?.success) throw new Error(msg?.msg || 'Failed to fetch extension monitor');
+  const validated = parseMsg(msg, ExtensionMonitorSnapshotSchema, 'server/extensionMonitor');
+  if (!validated.obj) throw new Error('Failed to fetch extension monitor');
+  return validated.obj;
 }
 
-function asNumber(value: unknown, fallback = 0): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-function formatWhen(value: string | undefined, empty: string): string {
-  if (!value) return empty;
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleString();
+function Kpi({
+  label,
+  value,
+  hint,
+  icon,
+  tone,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  icon: React.ReactNode;
+  tone?: 'ok' | 'warn';
+}) {
+  return (
+    <div className={`mon-kpi${tone ? ` is-${tone}` : ''}`}>
+      <span className="mon-kpi-icon">{icon}</span>
+      <span className="mon-kpi-body">
+        <span className="mon-kpi-label">{label}</span>
+        <span className="mon-kpi-value">{value}</span>
+        {hint && <span className="mon-kpi-hint">{hint}</span>}
+      </span>
+    </div>
+  );
 }
 
 function CountryBeside({ country, countryCode }: { country?: string; countryCode?: string }) {
@@ -92,36 +127,19 @@ function CountryBeside({ country, countryCode }: { country?: string; countryCode
   );
 }
 
-function formatLastSeen(ts: number | undefined, empty: string): string {
-  if (!ts || ts <= 0) return empty;
-  const ms = ts < 1e12 ? ts * 1000 : ts;
-  return new Date(ms).toLocaleString();
-}
-
-async function fetchExtensionMonitor(filter: string): Promise<ExtensionMonitorSnapshot> {
-  const msg = await HttpUtil.get(
-    '/panel/api/server/extensionMonitor',
-    { count: LOG_COUNT, filter },
-    { silent: true },
-  );
-  if (!msg?.success) throw new Error(msg?.msg || 'Failed to fetch extension monitor');
-  const validated = parseMsg(msg, ExtensionMonitorSnapshotSchema, 'server/extensionMonitor');
-  if (!validated.obj) throw new Error('Failed to fetch extension monitor');
-  return validated.obj;
-}
-
 export default function MonitoringPage() {
   const { t } = useTranslation();
   const { isDark, isUltra, antdThemeConfig } = useTheme();
   const { isMobile } = useMediaQuery();
   const { status } = useStatusQuery();
   const [filter, setFilter] = useState('');
+  const [searchText, setSearchText] = useState('');
   const [paused, setPaused] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [logPage, setLogPage] = useState(1);
   const [logPageSize, setLogPageSize] = useState(20);
   const [clientPage, setClientPage] = useState(1);
-  const [clientPageSize, setClientPageSize] = useState(8);
+  const [clientPageSize, setClientPageSize] = useState(10);
 
   const monitorQuery = useQuery({
     queryKey: keys.server.extensionMonitor(LOG_COUNT, filter),
@@ -133,39 +151,85 @@ export default function MonitoringPage() {
   const inbound = snapshot?.inbound;
   const logs = snapshot?.logs ?? [];
   const clients = snapshot?.clients ?? [];
+  const topDests = snapshot?.topDests ?? [];
+  const countries = snapshot?.countries ?? [];
+  const timeline = snapshot?.timeline ?? [];
   const stats = snapshot?.stats;
   const xrayStateText = t(XRAY_STATE_KEYS[status.xray.state] ?? 'pages.index.xrayStatusUnknown');
   const pageClass =
     `monitoring-page ${isDark ? 'is-dark' : ''} ${isUltra ? 'is-ultra' : ''}`.trim();
 
-  // An HTTP inbound has no accounts, so every identity is just the client IP.
-  // Keeping both columns then printed the same value twice.
+  // An HTTP inbound has no accounts and no per-client counters, so the columns
+  // that depend on them would be a screenful of identical or empty cells.
   const namedClients = clients.some((row) => asText(row.email) !== '');
   const namedLogs = logs.some((row) => asText(row.email) !== '');
+  const clientTraffic = clients.some(
+    (row) => asNumber(row.up) > 0 || asNumber(row.down) > 0 || asNumber(row.total) > 0,
+  );
+  const anyRejected = asNumber(stats?.rejected) > 0;
+  const anyNetwork = logs.some((row) => asText(row.network) !== '');
+
+  function applyFilter(value: string) {
+    const next = value.trim();
+    setFilter(next);
+    setSearchText(next);
+    setLogPage(1);
+    setClientPage(1);
+  }
+
+  const siteItems: RankedItem[] = topDests.map((dest) => ({
+    key: `${asText(dest.host)}:${asText(dest.port)}`,
+    label: shortHost(asText(dest.url) || asText(dest.host)),
+    meta: t('pages.monitoring.siteClients', { count: asNumber(dest.clients) }),
+    value: asNumber(dest.hits),
+    warn: asNumber(dest.rejected),
+    title: asText(dest.host),
+  }));
+
+  const countryItems: RankedItem[] = countries.map((country) => ({
+    key: asText(country.code),
+    label:
+      `${countryFlag(asText(country.code))} ${asText(country.name) || asText(country.code)}`.trim(),
+    meta: t('pages.monitoring.countryHits', { count: asNumber(country.hits) }),
+    value: asNumber(country.clients),
+    title: asText(country.name),
+  }));
 
   const clientColumns: ColumnsType<ExtensionClientRow> = [
     {
       title: namedClients ? t('pages.monitoring.user') : t('pages.monitoring.clientIp'),
       key: 'user',
       ellipsis: true,
-      render: (_, row) => (
-        <Space size={6}>
-          <Tag color={row.online ? 'green' : 'default'}>
-            {row.online ? t('online') : t('offline')}
-          </Tag>
-          <Typography.Text copyable>
-            {asText(row.email) || asText(row.user) || asText(row.clientIp) || t('none')}
-          </Typography.Text>
-          <CountryBeside country={asText(row.country)} countryCode={asText(row.countryCode)} />
-        </Space>
-      ),
+      sorter: (a, b) =>
+        Number(Boolean(b.online)) - Number(Boolean(a.online)) ||
+        asNumber(b.lastOnline) - asNumber(a.lastOnline),
+      defaultSortOrder: 'ascend',
+      render: (_, row) => {
+        const identity = asText(row.email) || asText(row.user) || asText(row.clientIp);
+        return (
+          <Space size={6}>
+            <Tag color={row.online ? 'green' : 'default'}>
+              {row.online ? t('online') : t('offline')}
+            </Tag>
+            <button
+              type="button"
+              className="mon-link"
+              title={t('pages.monitoring.filterBy', { value: identity })}
+              onClick={() => applyFilter(identity)}
+            >
+              {identity || t('none')}
+            </button>
+            <CountryBeside country={asText(row.country)} countryCode={asText(row.countryCode)} />
+          </Space>
+        );
+      },
     },
     ...(namedClients
       ? ([
           {
             title: t('pages.monitoring.clientIp'),
             dataIndex: 'clientIp',
-            width: 220,
+            width: 200,
             render: (ip: string | undefined, row) => {
               const addr = asText(ip);
               if (!addr) return t('none');
@@ -183,38 +247,94 @@ export default function MonitoringPage() {
         ] satisfies ColumnsType<ExtensionClientRow>)
       : []),
     {
+      title: t('pages.monitoring.hits'),
+      dataIndex: 'hits',
+      width: 96,
+      align: 'right',
+      sorter: (a, b) => asNumber(a.hits) - asNumber(b.hits),
+      render: (hits: number | undefined) => compactNumber(asNumber(hits)),
+    },
+    ...(anyRejected
+      ? ([
+          {
+            title: t('pages.monitoring.rejected'),
+            dataIndex: 'rejected',
+            width: 96,
+            align: 'right',
+            sorter: (a, b) => asNumber(a.rejected) - asNumber(b.rejected),
+            render: (n: number | undefined) =>
+              asNumber(n) > 0 ? (
+                <Typography.Text type="danger">{asNumber(n)}</Typography.Text>
+              ) : (
+                '—'
+              ),
+          },
+        ] satisfies ColumnsType<ExtensionClientRow>)
+      : []),
+    {
       title: t('pages.monitoring.lastDest'),
       key: 'lastDest',
       ellipsis: true,
-      render: (_, row) => asText(row.lastURL) || asText(row.lastDest) || t('none'),
+      render: (_, row) => {
+        const dest = asText(row.lastURL) || asText(row.lastDest);
+        if (!dest) return t('none');
+        return (
+          <button
+            type="button"
+            className="mon-link"
+            title={t('pages.monitoring.filterBy', { value: shortHost(dest) })}
+            onClick={() => applyFilter(shortHost(dest).split('/')[0])}
+          >
+            {shortHost(dest)}
+          </button>
+        );
+      },
     },
     {
       title: t('pages.monitoring.recentDests'),
       key: 'recentDests',
       ellipsis: true,
+      responsive: ['lg'],
       render: (_, row) => {
         const dests = Array.isArray(row.recentDests) ? row.recentDests.filter(Boolean) : [];
         if (dests.length === 0) return t('none');
-        return dests.slice(0, 3).join(' · ');
+        return (
+          <Tooltip title={dests.map(shortHost).join('\n')}>
+            <span className="mon-chips">
+              {dests.slice(0, 3).map((dest) => (
+                <Tag key={dest} bordered={false}>
+                  {shortHost(dest)}
+                </Tag>
+              ))}
+            </span>
+          </Tooltip>
+        );
       },
     },
-    {
-      title: t('pages.monitoring.hits'),
-      dataIndex: 'hits',
-      width: 80,
-      render: (hits: number | undefined) => hits ?? 0,
-    },
-    {
-      title: t('pages.inbounds.traffic'),
-      key: 'traffic',
-      render: (_, row) =>
-        `${SizeFormatter.sizeFormat(asNumber(row.up))} ↑ · ${SizeFormatter.sizeFormat(asNumber(row.down))} ↓`,
-    },
+    ...(clientTraffic
+      ? ([
+          {
+            title: t('pages.inbounds.traffic'),
+            key: 'traffic',
+            width: 180,
+            sorter: (a, b) =>
+              asNumber(a.up) + asNumber(a.down) - (asNumber(b.up) + asNumber(b.down)),
+            render: (_, row) =>
+              `${SizeFormatter.sizeFormat(asNumber(row.up))} ↑ · ${SizeFormatter.sizeFormat(asNumber(row.down))} ↓`,
+          },
+        ] satisfies ColumnsType<ExtensionClientRow>)
+      : []),
     {
       title: t('lastOnline'),
       dataIndex: 'lastOnline',
-      width: isMobile ? 140 : 200,
-      render: (ts: number | undefined) => formatLastSeen(ts, t('none')),
+      width: 110,
+      align: 'right',
+      sorter: (a, b) => asNumber(a.lastOnline) - asNumber(b.lastOnline),
+      render: (ts: number | undefined) => (
+        <Tooltip title={formatLastSeen(ts, t('none'))}>
+          <span>{formatAgo(ts, t('none'))}</span>
+        </Tooltip>
+      ),
     },
   ];
 
@@ -223,6 +343,8 @@ export default function MonitoringPage() {
       title: t('pages.monitoring.details'),
       dataIndex: 'time',
       width: isMobile ? 110 : 170,
+      sorter: (a, b) =>
+        new Date(asText(a.time)).getTime() - new Date(asText(b.time)).getTime() || 0,
       render: (value: string | undefined) => formatWhen(value, t('none')),
     },
     ...(namedLogs
@@ -241,16 +363,20 @@ export default function MonitoringPage() {
     {
       title: t('pages.monitoring.clientIp'),
       key: 'client',
-      width: 150,
+      width: 220,
       render: (_, row) => {
         const ip = asText(row.clientIp);
-        const port = asText(row.clientPort);
         if (!ip) return t('none');
         return (
           <Space size={6} wrap>
-            <Typography.Text copyable={{ text: port ? `${ip}:${port}` : ip }}>
-              {port ? `${ip}:${port}` : ip}
-            </Typography.Text>
+            <button
+              type="button"
+              className="mon-link"
+              title={t('pages.monitoring.filterBy', { value: ip })}
+              onClick={() => applyFilter(ip)}
+            >
+              {ip}
+            </button>
             <CountryBeside country={asText(row.country)} countryCode={asText(row.countryCode)} />
           </Space>
         );
@@ -260,24 +386,28 @@ export default function MonitoringPage() {
       title: t('pages.monitoring.destUrl'),
       dataIndex: 'url',
       ellipsis: true,
-      render: (url: string | undefined, row) => (
-        <Typography.Text copyable={{ text: url || asText(row.destAddress) }}>
-          {url || asText(row.destAddress) || t('none')}
-        </Typography.Text>
-      ),
+      render: (url: string | undefined, row) => {
+        const dest = asText(url) || asText(row.destAddress);
+        if (!dest) return t('none');
+        return (
+          <Space size={6}>
+            <Typography.Text copyable={{ text: dest }} className="mon-dest">
+              {shortHost(dest)}
+            </Typography.Text>
+          </Space>
+        );
+      },
     },
-    {
-      title: t('pages.monitoring.packet'),
-      dataIndex: 'packet',
-      ellipsis: true,
-      render: (packet: string | undefined) => packet || t('none'),
-    },
-    {
-      title: t('pages.monitoring.network'),
-      dataIndex: 'network',
-      width: 80,
-      render: (network: string | undefined) => (network ? network.toUpperCase() : t('none')),
-    },
+    ...(anyNetwork
+      ? ([
+          {
+            title: t('pages.monitoring.network'),
+            dataIndex: 'network',
+            width: 80,
+            render: (network: string | undefined) => (network ? network.toUpperCase() : t('none')),
+          },
+        ] satisfies ColumnsType<ExtensionLogEntry>)
+      : []),
     {
       title: t('status'),
       dataIndex: 'status',
@@ -314,10 +444,7 @@ export default function MonitoringPage() {
           { label: t('pages.monitoring.destPort'), children: asText(row.destPort) || t('none') },
           { label: t('pages.monitoring.packet'), children: asText(row.packet) || t('none') },
           { label: t('pages.monitoring.network'), children: asText(row.network) || t('none') },
-          {
-            label: t('pages.monitoring.clientIp'),
-            children: asText(row.clientIp) || t('none'),
-          },
+          { label: t('pages.monitoring.clientIp'), children: asText(row.clientIp) || t('none') },
           {
             label: t('pages.monitoring.country'),
             children: asText(row.country)
@@ -330,11 +457,9 @@ export default function MonitoringPage() {
             label: t('pages.monitoring.rawLog'),
             span: 2,
             children: (
-              <Space orientation="vertical" style={{ width: '100%' }}>
-                <Typography.Paragraph copyable className="mon-raw">
-                  {asText(row.raw)}
-                </Typography.Paragraph>
-              </Space>
+              <Typography.Paragraph copyable className="mon-raw">
+                {asText(row.raw)}
+              </Typography.Paragraph>
             ),
           },
         ]}
@@ -342,6 +467,9 @@ export default function MonitoringPage() {
     ),
     [isMobile, t],
   );
+
+  const logCount = asNumber(stats?.logCount, logs.length);
+  const eventCount = asNumber(stats?.eventCount, logs.length);
 
   return (
     <ConfigProvider theme={antdThemeConfig}>
@@ -433,10 +561,6 @@ export default function MonitoringPage() {
                 />
               ) : (
                 <>
-                  <Typography.Paragraph className="mon-hint">
-                    {t('pages.monitoring.sniffHint')}
-                  </Typography.Paragraph>
-
                   {snapshot && snapshot.accessLogEnabled === false && (
                     <Alert
                       type="warning"
@@ -446,90 +570,114 @@ export default function MonitoringPage() {
                     />
                   )}
 
+                  <div className="mon-filterbar">
+                    <Input.Search
+                      allowClear
+                      value={searchText}
+                      placeholder={t('pages.monitoring.searchPlaceholder')}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      onSearch={applyFilter}
+                      style={{ width: isMobile ? '100%' : 340 }}
+                    />
+                    {filter && (
+                      <Tag closable color="processing" onClose={() => applyFilter('')}>
+                        {t('pages.monitoring.filteredBy', { value: filter })}
+                      </Tag>
+                    )}
+                    <Typography.Text type="secondary" className="mon-hint">
+                      {t('pages.monitoring.sniffHint')}
+                    </Typography.Text>
+                  </div>
+
+                  <div className="mon-kpis">
+                    <Kpi
+                      label={t('pages.monitoring.eventCount')}
+                      value={compactNumber(eventCount)}
+                      hint={t('pages.monitoring.wholeLog')}
+                      icon={<ThunderboltOutlined />}
+                    />
+                    <Kpi
+                      label={t('pages.monitoring.uniqueIps')}
+                      value={compactNumber(asNumber(stats?.uniqueIps, clients.length))}
+                      icon={<TeamOutlined />}
+                    />
+                    <Kpi
+                      label={t('pages.monitoring.onlineClients')}
+                      value={compactNumber(asNumber(stats?.online))}
+                      hint={t('pages.monitoring.onlineWindow')}
+                      icon={<LinkOutlined />}
+                      tone="ok"
+                    />
+                    <Kpi
+                      label={t('pages.monitoring.uniqueDests')}
+                      value={compactNumber(asNumber(stats?.uniqueDests))}
+                      icon={<GlobalOutlined />}
+                    />
+                    <Kpi
+                      label={t('pages.monitoring.rejected')}
+                      value={compactNumber(asNumber(stats?.rejected))}
+                      icon={<StopOutlined />}
+                      tone={anyRejected ? 'warn' : undefined}
+                    />
+                    <Kpi
+                      label={t('pages.inbounds.traffic')}
+                      value={SizeFormatter.sizeFormat(
+                        asNumber(inbound?.up) + asNumber(inbound?.down),
+                      )}
+                      hint={`${SizeFormatter.sizeFormat(asNumber(inbound?.up))} ↑ · ${SizeFormatter.sizeFormat(asNumber(inbound?.down))} ↓`}
+                      icon={<SwapOutlined />}
+                    />
+                  </div>
+
+                  <Card
+                    size="small"
+                    className="mon-activity-card"
+                    title={t('pages.monitoring.activity')}
+                  >
+                    <ActivityChart
+                      buckets={timeline}
+                      emptyText={t('pages.monitoring.noLogs')}
+                      eventsLabel={t('pages.monitoring.eventCount')}
+                      rejectedLabel={t('pages.monitoring.rejected')}
+                      height={isMobile ? 120 : 160}
+                    />
+                  </Card>
+
                   <Row gutter={[isMobile ? 8 : 16, isMobile ? 8 : 12]}>
-                    <Col xs={12} md={6}>
-                      <Card size="small" className="summary-card">
-                        <Statistic
-                          title={t('pages.monitoring.eventCount')}
-                          value={stats?.eventCount ?? 0}
-                          prefix={<ThunderboltOutlined />}
+                    <Col xs={24} lg={14}>
+                      <Card
+                        size="small"
+                        className="mon-insight-card"
+                        title={t('pages.monitoring.topSites')}
+                        extra={
+                          <Typography.Text type="secondary">
+                            {compactNumber(asNumber(stats?.uniqueDests))}
+                          </Typography.Text>
+                        }
+                      >
+                        <RankedList
+                          items={siteItems}
+                          emptyText={t('pages.monitoring.noLogs')}
+                          onSelect={(item) => applyFilter(item.title || item.label)}
                         />
                       </Card>
                     </Col>
-                    <Col xs={12} md={6}>
-                      <Card size="small" className="summary-card">
-                        <Statistic
-                          title={t('pages.monitoring.uniqueDests')}
-                          value={stats?.uniqueDests ?? 0}
-                          prefix={<GlobalOutlined />}
-                        />
-                      </Card>
-                    </Col>
-                    <Col xs={12} md={6}>
-                      <Card size="small" className="summary-card">
-                        <Statistic
-                          title={t('pages.monitoring.uniqueIps')}
-                          value={stats?.uniqueIps ?? 0}
-                          prefix={<TeamOutlined />}
-                        />
-                      </Card>
-                    </Col>
-                    <Col xs={12} md={6}>
-                      <Card size="small" className="summary-card">
-                        <Statistic
-                          title={t('pages.monitoring.onlineClients')}
-                          value={stats?.online ?? 0}
-                          prefix={<LinkOutlined />}
-                        />
+                    <Col xs={24} lg={10}>
+                      <Card
+                        size="small"
+                        className="mon-insight-card"
+                        title={t('pages.monitoring.topCountries')}
+                      >
+                        <RankedList items={countryItems} emptyText={t('pages.monitoring.noLogs')} />
                       </Card>
                     </Col>
                   </Row>
-
-                  {inbound && (
-                    <Card size="small" className="mon-inbound-card">
-                      <Descriptions
-                        size="small"
-                        column={isMobile ? 1 : 4}
-                        items={[
-                          {
-                            label: t('remark'),
-                            children: inbound.remark || t('pages.monitoring.extensionInbound'),
-                          },
-                          { label: t('pages.inbounds.port'), children: inbound.port },
-                          {
-                            label: t('protocol'),
-                            children: (inbound.protocol || '').toUpperCase() || t('none'),
-                          },
-                          {
-                            label: t('pages.monitoring.inboundTag'),
-                            children: inbound.tag || t('none'),
-                          },
-                          {
-                            label: t('pages.inbounds.traffic'),
-                            children: `${SizeFormatter.sizeFormat(asNumber(inbound.up))} ↑ · ${SizeFormatter.sizeFormat(asNumber(inbound.down))} ↓`,
-                          },
-                          {
-                            label: t('pages.monitoring.accepted'),
-                            children: stats?.accepted ?? 0,
-                          },
-                          {
-                            label: t('pages.monitoring.rejected'),
-                            children: stats?.rejected ?? 0,
-                          },
-                          {
-                            label: t('pages.monitoring.uniqueIps'),
-                            children: inbound.clients ?? clients.length,
-                          },
-                        ]}
-                      />
-                    </Card>
-                  )}
 
                   <Card
                     size="small"
                     className="mon-clients-card"
                     title={t('pages.monitoring.onlineClients')}
-                    extra={`${stats?.online ?? 0}/${clients.length}`}
+                    extra={`${asNumber(stats?.online)}/${clients.length}`}
                   >
                     <Table
                       size="small"
@@ -542,7 +690,7 @@ export default function MonitoringPage() {
                         current: clientPage,
                         pageSize: clientPageSize,
                         total: clients.length,
-                        showSizeChanger: clients.length > 8,
+                        showSizeChanger: clients.length > 10,
                         pageSizeOptions: CLIENT_PAGE_SIZES.map(String),
                         hideOnSinglePage: clients.length <= clientPageSize,
                         onChange: (page, size) => {
@@ -560,23 +708,11 @@ export default function MonitoringPage() {
                     className="mon-log-card"
                     title={
                       <Space size={8}>
-                        {t('pages.monitoring.packet')}
+                        {t('pages.monitoring.requests')}
                         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                          {(stats?.logCount ?? logs.length).toLocaleString()} /{' '}
-                          {(stats?.eventCount ?? logs.length).toLocaleString()}
+                          {logCount.toLocaleString()} / {eventCount.toLocaleString()}
                         </Typography.Text>
                       </Space>
-                    }
-                    extra={
-                      <Input.Search
-                        allowClear
-                        placeholder={t('pages.monitoring.filterLogs')}
-                        onSearch={(value) => {
-                          setFilter(value);
-                          setLogPage(1);
-                        }}
-                        style={{ width: isMobile ? 180 : 280 }}
-                      />
                     }
                   >
                     <Table
@@ -600,7 +736,7 @@ export default function MonitoringPage() {
                         },
                       }}
                       locale={{ emptyText: t('pages.monitoring.noLogs') }}
-                      scroll={{ x: 1100 }}
+                      scroll={{ x: 1000 }}
                     />
                   </Card>
                 </>

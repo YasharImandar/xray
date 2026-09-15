@@ -2058,6 +2058,30 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "ExtensionBucket": {
+    "description": "ExtensionBucket is one slice of the activity timeline, downsampled so the\nchart stays a fixed width however long the log has been accumulating.",
+    "properties": {
+      "at": {
+        "example": 1735680000000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "events": {
+        "example": 412,
+        "type": "integer"
+      },
+      "rejected": {
+        "example": 3,
+        "type": "integer"
+      }
+    },
+    "required": [
+      "at",
+      "events",
+      "rejected"
+    ],
+    "type": "object"
+  },
   "ExtensionClientRow": {
     "description": "ExtensionClientRow is one client on the extension inbound plus last dest.",
     "properties": {
@@ -2116,6 +2140,10 @@ export const SCHEMAS: Record<string, unknown> = {
         },
         "type": "array"
       },
+      "rejected": {
+        "example": 1,
+        "type": "integer"
+      },
       "total": {
         "example": 10737418240,
         "format": "int64",
@@ -2144,9 +2172,82 @@ export const SCHEMAS: Record<string, unknown> = {
       "lastURL",
       "online",
       "recentDests",
+      "rejected",
       "total",
       "up",
       "user"
+    ],
+    "type": "object"
+  },
+  "ExtensionCountryRow": {
+    "description": "ExtensionCountryRow is one client country aggregated over the whole log.",
+    "properties": {
+      "clients": {
+        "example": 280,
+        "type": "integer"
+      },
+      "code": {
+        "example": "IR",
+        "type": "string"
+      },
+      "hits": {
+        "example": 91234,
+        "type": "integer"
+      },
+      "name": {
+        "example": "Iran",
+        "type": "string"
+      }
+    },
+    "required": [
+      "clients",
+      "code",
+      "hits",
+      "name"
+    ],
+    "type": "object"
+  },
+  "ExtensionDestRow": {
+    "description": "ExtensionDestRow is one destination aggregated over the whole access log.",
+    "properties": {
+      "clients": {
+        "example": 37,
+        "type": "integer"
+      },
+      "hits": {
+        "example": 5794,
+        "type": "integer"
+      },
+      "host": {
+        "example": "www.youtube.com",
+        "type": "string"
+      },
+      "lastSeen": {
+        "example": 1735680000000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "port": {
+        "example": "443",
+        "type": "string"
+      },
+      "rejected": {
+        "example": 0,
+        "type": "integer"
+      },
+      "url": {
+        "example": "https://www.youtube.com",
+        "type": "string"
+      }
+    },
+    "required": [
+      "clients",
+      "hits",
+      "host",
+      "lastSeen",
+      "port",
+      "rejected",
+      "url"
     ],
     "type": "object"
   },
@@ -2325,6 +2426,12 @@ export const SCHEMAS: Record<string, unknown> = {
         },
         "type": "array"
       },
+      "countries": {
+        "items": {
+          "$ref": "#/components/schemas/ExtensionCountryRow"
+        },
+        "type": "array"
+      },
       "found": {
         "example": true,
         "type": "boolean"
@@ -2345,15 +2452,30 @@ export const SCHEMAS: Record<string, unknown> = {
       },
       "stats": {
         "$ref": "#/components/schemas/ExtensionMonitorStats"
+      },
+      "timeline": {
+        "items": {
+          "$ref": "#/components/schemas/ExtensionBucket"
+        },
+        "type": "array"
+      },
+      "topDests": {
+        "items": {
+          "$ref": "#/components/schemas/ExtensionDestRow"
+        },
+        "type": "array"
       }
     },
     "required": [
       "accessLogEnabled",
       "accessLogPath",
       "clients",
+      "countries",
       "found",
       "logs",
-      "stats"
+      "stats",
+      "timeline",
+      "topDests"
     ],
     "type": "object"
   },

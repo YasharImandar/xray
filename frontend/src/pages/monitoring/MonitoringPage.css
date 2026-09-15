@@ -55,22 +55,212 @@
   margin-inline-start: auto;
 }
 
+.monitoring-page .mon-filterbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .monitoring-page .mon-hint {
   margin-bottom: 0;
-  color: var(--ant-color-text-secondary);
+  font-size: 12px;
 }
 
 .monitoring-page .mon-alert,
-.monitoring-page .mon-inbound-card,
-.monitoring-page .mon-log-card,
-.monitoring-page .summary-card {
+.monitoring-page .mon-activity-card,
+.monitoring-page .mon-insight-card,
+.monitoring-page .mon-clients-card,
+.monitoring-page .mon-log-card {
   width: 100%;
+}
+
+.monitoring-page .mon-insight-card {
+  height: 100%;
+}
+
+/* KPI strip: one scan of the inbound's state without a card per number. */
+.monitoring-page .mon-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.monitoring-page .mon-kpi {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: var(--ant-border-radius-lg, 8px);
+  background: var(--ant-color-bg-container);
+  min-width: 0;
+}
+
+.monitoring-page .mon-kpi-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ant-color-fill-quaternary);
+  color: var(--ant-color-text-secondary);
+  font-size: 14px;
+}
+
+.monitoring-page .mon-kpi.is-ok .mon-kpi-icon {
+  background: var(--ant-color-success-bg);
+  color: var(--ant-color-success);
+}
+
+.monitoring-page .mon-kpi.is-warn .mon-kpi-icon {
+  background: var(--ant-color-error-bg);
+  color: var(--ant-color-error);
+}
+
+.monitoring-page .mon-kpi-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.monitoring-page .mon-kpi-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ant-color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.monitoring-page .mon-kpi-value {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.monitoring-page .mon-kpi-hint {
+  font-size: 11px;
+  color: var(--ant-color-text-quaternary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ranked bars: shows whether one site dominates or traffic is spread thin. */
+.monitoring-page .mon-ranked {
+  display: flex;
+  flex-direction: column;
+}
+
+.monitoring-page .mon-ranked-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  font: inherit;
+  overflow: hidden;
+}
+
+.monitoring-page button.mon-ranked-row {
+  cursor: pointer;
+}
+
+.monitoring-page button.mon-ranked-row:hover,
+.monitoring-page button.mon-ranked-row:focus-visible {
+  background: var(--ant-color-fill-quaternary);
+}
+
+.monitoring-page .mon-ranked-bar {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.monitoring-page .mon-ranked-fill,
+.monitoring-page .mon-ranked-warn {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  border-radius: 6px;
+}
+
+.monitoring-page .mon-ranked-fill {
+  background: color-mix(in srgb, var(--ant-color-primary) 14%, transparent);
+}
+
+.monitoring-page .mon-ranked-warn {
+  background: color-mix(in srgb, var(--ant-color-error) 22%, transparent);
+}
+
+.monitoring-page .mon-ranked-text {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.monitoring-page .mon-ranked-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.monitoring-page .mon-ranked-meta {
+  font-size: 11px;
+}
+
+.monitoring-page .mon-ranked-value {
+  position: relative;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.monitoring-page .mon-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ant-color-link);
+  font: inherit;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monitoring-page .mon-link:hover {
+  text-decoration: underline;
+}
+
+.monitoring-page .mon-chips {
+  display: inline-flex;
+  gap: 4px;
+  overflow: hidden;
 }
 
 .monitoring-page .mon-country {
   white-space: nowrap;
   color: var(--ant-color-text-secondary);
   font-size: 12px;
+}
+
+.monitoring-page .mon-dest {
+  max-width: 100%;
 }
 
 .monitoring-page .mon-raw {
@@ -84,10 +274,20 @@
   margin-inline-start: 8px;
 }
 
+@media (max-width: 1200px) {
+  .monitoring-page .mon-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .monitoring-page .content-area {
     padding: 12px;
     padding-top: 64px;
+  }
+
+  .monitoring-page .mon-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .monitoring-page .mon-actions {
