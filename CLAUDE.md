@@ -75,6 +75,14 @@ file locations when it can answer in one hop.
   share-link or install-command output changes.
 
 ## Hard rules (non-negotiable)
+- NEVER compile, `go build`, `npm run build`, `make build`, install a toolchain
+  (`go`, Node, gcc, …), or rsync source onto a live VPS / production host
+  (including `82.47.63.105` / mtproxier.ir). CGO + Xray-core OOMs small boxes
+  and takes SSH down. Build the linux-amd64 binary on CI or the local machine
+  (Docker if the host is not Linux). The only thing that may land on the
+  server is the finished `x-ui` binary (replace `/usr/local/x-ui/x-ui`, then
+  restart the service). If GitHub Actions cannot publish, wait or build
+  locally — do not "just compile on the box". See `deploy/README.md`.
 - Fix size must match bug size. Find the root cause, then make the SMALLEST
   change that removes it — a one-line guard beats a new subsystem. A small bug
   does not earn new columns, jobs, abstractions, config knobs or helper layers.

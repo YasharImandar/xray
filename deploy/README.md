@@ -4,6 +4,20 @@ Tooling to ship the 3x-ui panel via unattended install, with **per-instance
 credentials generated on first boot** (never `admin/admin`, never a shared
 session secret). Works on amd64 and arm64.
 
+## Never build on the live VPS
+
+The panel host is not a build machine. Compiling this repo on the server
+(CGO sqlite3 + Xray-core) can OOM the box and drop SSH.
+
+**Allowed on the VPS:** drop a prebuilt `x-ui` binary (from GitHub Releases
+or a local/CI linux-amd64 build) at `/usr/local/x-ui/x-ui` and restart
+`x-ui`. `install.sh` / panel Update already do this.
+
+**Forbidden on the VPS:** `go build`, `make build`, `npm run build`,
+installing Go/Node/gcc, rsyncing the repo to compile in `/tmp`, or
+"temporary" `nohup` compiles. If Actions is billed-locked, build on a
+dev machine or Docker — never on the live host.
+
 | Path | What it is | Use when |
 | --- | --- | --- |
 | [`cloud-init/`](cloud-init/) | Generic cloud-init user-data (unattended `install.sh`) | Any cloud, no image build |

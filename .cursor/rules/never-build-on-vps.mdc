@@ -1,0 +1,14 @@
+---
+description: Never compile on the live VPS — only place a prebuilt x-ui binary
+alwaysApply: true
+---
+
+# Never build on the live VPS
+
+Do not compile this project on a production host (including `82.47.63.105` / mtproxier.ir).
+
+Forbidden on the server: `go build`, `make build`, `npm run build`, installing Go/Node/gcc, rsyncing source to `/tmp` to compile, or a "temporary" `nohup` build. CGO + Xray-core OOMs small VPS boxes and kills SSH.
+
+Allowed: build linux-amd64 on CI or the local machine (Docker if the host is not Linux). Copy only the finished `x-ui` binary to `/usr/local/x-ui/x-ui` and restart the service.
+
+If GitHub Actions cannot publish a release, wait or build locally. Never "just compile on the box". Details: `deploy/README.md`, `CLAUDE.md`.
