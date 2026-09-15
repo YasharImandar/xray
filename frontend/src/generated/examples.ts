@@ -525,6 +525,9 @@ export const EXAMPLES: Record<string, unknown> = {
     "total": 2000
   },
   "ExtensionClientRow": {
+    "clientIp": "192.0.2.10",
+    "country": "Iran",
+    "countryCode": "IR",
     "down": 4194304,
     "email": "alice@example.com",
     "enable": true,
@@ -533,8 +536,12 @@ export const EXAMPLES: Record<string, unknown> = {
     "lastOnline": 1735680000000,
     "lastURL": "https://example.com",
     "online": true,
+    "recentDests": [
+      "https://example.com"
+    ],
     "total": 10737418240,
-    "up": 1048576
+    "up": 1048576,
+    "user": "192.0.2.10"
   },
   "ExtensionInboundInfo": {
     "clients": 3,
@@ -550,6 +557,8 @@ export const EXAMPLES: Record<string, unknown> = {
   "ExtensionLogEntry": {
     "clientIp": "192.0.2.10",
     "clientPort": "54321",
+    "country": "Iran",
+    "countryCode": "IR",
     "destAddress": "tcp:example.com:443",
     "destHost": "example.com",
     "destPort": "443",
@@ -563,13 +572,17 @@ export const EXAMPLES: Record<string, unknown> = {
     "raw": "2025/01/01 12:00:00.000000 from 192.0.2.10:54321 accepted tcp:example.com:443 [inbound-2053 \u003e\u003e direct] email: alice@example.com",
     "status": "accepted",
     "time": "2025-01-01T12:00:00Z",
-    "url": "https://example.com"
+    "url": "https://example.com",
+    "user": "alice@example.com"
   },
   "ExtensionMonitorSnapshot": {
     "accessLogEnabled": true,
     "accessLogPath": "/var/log/x-ui/access.log",
     "clients": [
       {
+        "clientIp": "192.0.2.10",
+        "country": "Iran",
+        "countryCode": "IR",
         "down": 4194304,
         "email": "alice@example.com",
         "enable": true,
@@ -578,8 +591,12 @@ export const EXAMPLES: Record<string, unknown> = {
         "lastOnline": 1735680000000,
         "lastURL": "https://example.com",
         "online": true,
+        "recentDests": [
+          "https://example.com"
+        ],
         "total": 10737418240,
-        "up": 1048576
+        "up": 1048576,
+        "user": "192.0.2.10"
       }
     ],
     "found": true,
@@ -588,6 +605,8 @@ export const EXAMPLES: Record<string, unknown> = {
       {
         "clientIp": "192.0.2.10",
         "clientPort": "54321",
+        "country": "Iran",
+        "countryCode": "IR",
         "destAddress": "tcp:example.com:443",
         "destHost": "example.com",
         "destPort": "443",
@@ -601,25 +620,28 @@ export const EXAMPLES: Record<string, unknown> = {
         "raw": "2025/01/01 12:00:00.000000 from 192.0.2.10:54321 accepted tcp:example.com:443 [inbound-2053 \u003e\u003e direct] email: alice@example.com",
         "status": "accepted",
         "time": "2025-01-01T12:00:00Z",
-        "url": "https://example.com"
+        "url": "https://example.com",
+        "user": "alice@example.com"
       }
     ],
     "stats": {
-      "accepted": 120,
-      "eventCount": 128,
+      "accepted": 107700,
+      "eventCount": 107711,
+      "logCount": 400,
       "online": 2,
-      "rejected": 8,
-      "uniqueDests": 17,
-      "uniqueUsers": 4
+      "rejected": 11,
+      "uniqueDests": 108,
+      "uniqueIps": 319
     }
   },
   "ExtensionMonitorStats": {
-    "accepted": 120,
-    "eventCount": 128,
+    "accepted": 107700,
+    "eventCount": 107711,
+    "logCount": 400,
     "online": 2,
-    "rejected": 8,
-    "uniqueDests": 17,
-    "uniqueUsers": 4
+    "rejected": 11,
+    "uniqueDests": 108,
+    "uniqueIps": 319
   },
   "FallbackParentInfo": {
     "masterId": 0,

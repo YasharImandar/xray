@@ -78,14 +78,18 @@ type ExtensionClientRow struct {
 	Hits        int      `json:"hits" example:"12"`
 }
 
-// ExtensionMonitorStats is the live tally for the current log window.
+// ExtensionMonitorStats tallies the whole access log, not the page of lines
+// Logs carries: the log holds far more events than any UI table shows, and a
+// count that silently equalled the display limit read as a broken counter.
 type ExtensionMonitorStats struct {
-	EventCount  int `json:"eventCount" example:"128"`
-	UniqueDests int `json:"uniqueDests" example:"17"`
-	UniqueUsers int `json:"uniqueUsers" example:"4"`
+	EventCount  int `json:"eventCount" example:"107711"`
+	UniqueDests int `json:"uniqueDests" example:"108"`
+	UniqueIps   int `json:"uniqueIps" example:"319"`
 	Online      int `json:"online" example:"2"`
-	Accepted    int `json:"accepted" example:"120"`
-	Rejected    int `json:"rejected" example:"8"`
+	Accepted    int `json:"accepted" example:"107700"`
+	Rejected    int `json:"rejected" example:"11"`
+	// LogCount is how many of those events Logs actually carries.
+	LogCount int `json:"logCount" example:"400"`
 }
 
 // ExtensionMonitorSnapshot is the Monitoring page payload for inbound extension.
@@ -377,10 +381,16 @@ func (s *ServerService) GetExtensionMonitor(count string, filter string) *Extens
 	}
 
 	clients, onlineCount := buildMonitorClients(entries, inbound.ClientStats, onlines, time.Now())
-	if len(entries) > limit {
-		entries = entries[len(entries)-limit:]
-	}
-	out.Logs = entries
+	fillMonitorStats(out, entries, clients, onlineCount, limit)
+	applyMonitorCountriesAt(out, xray.GetGeoipPath())
+	return out
+}
+
+// fillMonitorStats tallies every parsed event, then trims Logs to the newest
+// limit lines. The tally deliberately runs before the trim: the access log
+// holds orders of magnitude more events than the table shows, so counting the
+// page made Events and Accepted sit permanently at the display limit.
+func fillMonitorStats(out *ExtensionMonitorSnapshot, entries []ExtensionLogEntry, clients []ExtensionClientRow, onlineCount, limit int) {
 	dests := map[string]struct{}{}
 	for _, entry := range entries {
 		if entry.DestHost != "" {
@@ -394,12 +404,18 @@ func (s *ServerService) GetExtensionMonitor(count string, filter string) *Extens
 	}
 	out.Stats.EventCount = len(entries)
 	out.Stats.UniqueDests = len(dests)
-	out.Stats.UniqueUsers = len(clients)
-	out.Clients = clients
-	out.Inbound.Clients = len(clients)
+	out.Stats.UniqueIps = len(clients)
 	out.Stats.Online = onlineCount
-	applyMonitorCountriesAt(out, xray.GetGeoipPath())
-	return out
+
+	if len(entries) > limit {
+		entries = entries[len(entries)-limit:]
+	}
+	out.Logs = entries
+	out.Stats.LogCount = len(entries)
+	out.Clients = clients
+	if out.Inbound != nil {
+		out.Inbound.Clients = len(clients)
+	}
 }
 
 func applyMonitorCountriesAt(out *ExtensionMonitorSnapshot, geoipPath string) {

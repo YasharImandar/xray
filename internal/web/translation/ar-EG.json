@@ -148,7 +148,7 @@
       "rawLog": "السجل الخام",
       "packet": "الحزمة",
       "uniqueDests": "وجهات فريدة",
-      "uniqueUsers": "المستخدمون",
+      "uniqueIps": "عناوين IP الفريدة",
       "eventCount": "الأحداث",
       "lastDest": "آخر وجهة",
       "recentDests": "مواقع أخيرة",

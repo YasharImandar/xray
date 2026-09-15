@@ -2061,6 +2061,18 @@ export const SCHEMAS: Record<string, unknown> = {
   "ExtensionClientRow": {
     "description": "ExtensionClientRow is one client on the extension inbound plus last dest.",
     "properties": {
+      "clientIp": {
+        "example": "192.0.2.10",
+        "type": "string"
+      },
+      "country": {
+        "example": "Iran",
+        "type": "string"
+      },
+      "countryCode": {
+        "example": "IR",
+        "type": "string"
+      },
       "down": {
         "example": 4194304,
         "format": "int64",
@@ -2095,6 +2107,15 @@ export const SCHEMAS: Record<string, unknown> = {
         "example": true,
         "type": "boolean"
       },
+      "recentDests": {
+        "example": [
+          "https://example.com"
+        ],
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
       "total": {
         "example": 10737418240,
         "format": "int64",
@@ -2104,9 +2125,16 @@ export const SCHEMAS: Record<string, unknown> = {
         "example": 1048576,
         "format": "int64",
         "type": "integer"
+      },
+      "user": {
+        "example": "192.0.2.10",
+        "type": "string"
       }
     },
     "required": [
+      "clientIp",
+      "country",
+      "countryCode",
       "down",
       "email",
       "enable",
@@ -2115,8 +2143,10 @@ export const SCHEMAS: Record<string, unknown> = {
       "lastOnline",
       "lastURL",
       "online",
+      "recentDests",
       "total",
-      "up"
+      "up",
+      "user"
     ],
     "type": "object"
   },
@@ -2186,6 +2216,14 @@ export const SCHEMAS: Record<string, unknown> = {
         "example": "54321",
         "type": "string"
       },
+      "country": {
+        "example": "Iran",
+        "type": "string"
+      },
+      "countryCode": {
+        "example": "IR",
+        "type": "string"
+      },
       "destAddress": {
         "example": "tcp:example.com:443",
         "type": "string"
@@ -2241,11 +2279,17 @@ export const SCHEMAS: Record<string, unknown> = {
       "url": {
         "example": "https://example.com",
         "type": "string"
+      },
+      "user": {
+        "example": "alice@example.com",
+        "type": "string"
       }
     },
     "required": [
       "clientIp",
       "clientPort",
+      "country",
+      "countryCode",
       "destAddress",
       "destHost",
       "destPort",
@@ -2259,7 +2303,8 @@ export const SCHEMAS: Record<string, unknown> = {
       "raw",
       "status",
       "time",
-      "url"
+      "url",
+      "user"
     ],
     "type": "object"
   },
@@ -2313,14 +2358,19 @@ export const SCHEMAS: Record<string, unknown> = {
     "type": "object"
   },
   "ExtensionMonitorStats": {
-    "description": "ExtensionMonitorStats is the live tally for the current log window.",
+    "description": "ExtensionMonitorStats tallies the whole access log, not the page of lines\nLogs carries: the log holds far more events than any UI table shows, and a\ncount that silently equalled the display limit read as a broken counter.",
     "properties": {
       "accepted": {
-        "example": 120,
+        "example": 107700,
         "type": "integer"
       },
       "eventCount": {
-        "example": 128,
+        "example": 107711,
+        "type": "integer"
+      },
+      "logCount": {
+        "description": "LogCount is how many of those events Logs actually carries.",
+        "example": 400,
         "type": "integer"
       },
       "online": {
@@ -2328,25 +2378,26 @@ export const SCHEMAS: Record<string, unknown> = {
         "type": "integer"
       },
       "rejected": {
-        "example": 8,
+        "example": 11,
         "type": "integer"
       },
       "uniqueDests": {
-        "example": 17,
+        "example": 108,
         "type": "integer"
       },
-      "uniqueUsers": {
-        "example": 4,
+      "uniqueIps": {
+        "example": 319,
         "type": "integer"
       }
     },
     "required": [
       "accepted",
       "eventCount",
+      "logCount",
       "online",
       "rejected",
       "uniqueDests",
-      "uniqueUsers"
+      "uniqueIps"
     ],
     "type": "object"
   },

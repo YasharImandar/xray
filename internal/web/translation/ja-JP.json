@@ -148,7 +148,7 @@
       "rawLog": "生ログ",
       "packet": "パケット",
       "uniqueDests": "一意の宛先",
-      "uniqueUsers": "ユーザー",
+      "uniqueIps": "ユニーク IP",
       "eventCount": "イベント",
       "lastDest": "最終宛先",
       "recentDests": "最近のサイト",

@@ -453,8 +453,8 @@ export default function MonitoringPage() {
                     <Col xs={12} md={6}>
                       <Card size="small" className="summary-card">
                         <Statistic
-                          title={t('pages.monitoring.uniqueUsers')}
-                          value={stats?.uniqueUsers ?? 0}
+                          title={t('pages.monitoring.uniqueIps')}
+                          value={stats?.uniqueIps ?? 0}
                           prefix={<TeamOutlined />}
                         />
                       </Card>
@@ -502,7 +502,7 @@ export default function MonitoringPage() {
                             children: stats?.rejected ?? 0,
                           },
                           {
-                            label: t('clients'),
+                            label: t('pages.monitoring.uniqueIps'),
                             children: inbound.clients ?? clients.length,
                           },
                         ]}
@@ -542,7 +542,15 @@ export default function MonitoringPage() {
                   <Card
                     size="small"
                     className="mon-log-card"
-                    title={t('pages.monitoring.packet')}
+                    title={
+                      <Space size={8}>
+                        {t('pages.monitoring.packet')}
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          {(stats?.logCount ?? logs.length).toLocaleString()} /{' '}
+                          {(stats?.eventCount ?? logs.length).toLocaleString()}
+                        </Typography.Text>
+                      </Space>
+                    }
                     extra={
                       <Input.Search
                         allowClear

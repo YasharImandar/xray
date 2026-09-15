@@ -109,7 +109,7 @@ describe('MonitoringPage', () => {
           stats: {
             eventCount: 1,
             uniqueDests: 1,
-            uniqueUsers: 1,
+            uniqueIps: 1,
             online: 1,
             accepted: 1,
             rejected: 0,
@@ -184,7 +184,7 @@ describe('MonitoringPage', () => {
               hits: 4,
             },
           ],
-          stats: { eventCount: 1, uniqueDests: 1, uniqueUsers: 1, online: 1 },
+          stats: { eventCount: 1, uniqueDests: 1, uniqueIps: 1, online: 1 },
         });
       }
       return new Msg(false, 'unexpected get ' + url, null);
@@ -224,7 +224,13 @@ describe('MonitoringPage', () => {
           inbound: { id: 1, remark: 'extension', tag: 'inbound-2053', port: 2053, enable: true },
           logs,
           clients: [],
-          stats: { eventCount: 25, uniqueDests: 25, uniqueUsers: 1, online: 0 },
+          stats: {
+            eventCount: 107711,
+            uniqueDests: 108,
+            uniqueIps: 319,
+            online: 11,
+            logCount: 25,
+          },
         });
       }
       return new Msg(false, 'unexpected get ' + url, null);
@@ -243,6 +249,11 @@ describe('MonitoringPage', () => {
     const logCard = document.querySelector('.mon-log-card');
     expect(logCard).toBeTruthy();
     expect(within(logCard as HTMLElement).getAllByRole('row').length).toBeLessThan(25 + 2);
+
+    // The cards count the whole access log; only the table is a page of it.
+    expect(screen.getByText('107,711')).toBeTruthy();
+    expect(screen.getByText('319')).toBeTruthy();
+    expect(within(logCard as HTMLElement).getByText(/25 \/ 107,711/)).toBeTruthy();
 
     const sizeTrigger = within(logCard as HTMLElement).getByRole('combobox');
     await user.click(sizeTrigger);

@@ -148,7 +148,7 @@
       "rawLog": "原始日誌",
       "packet": "封包",
       "uniqueDests": "獨立目的地",
-      "uniqueUsers": "使用者",
+      "uniqueIps": "獨立 IP",
       "eventCount": "事件",
       "lastDest": "最近目的地",
       "recentDests": "最近造訪的網站",

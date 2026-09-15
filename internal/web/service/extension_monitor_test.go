@@ -1,9 +1,11 @@
 package service
 
 import (
+	"fmt"
 	"net/netip"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -174,6 +176,45 @@ func TestBuildMonitorClientsFromClientIPs(t *testing.T) {
 	}
 	if len(ipRow.RecentDests) != 2 || ipRow.RecentDests[0] != "https://fonts.gstatic.com" {
 		t.Fatalf("recent dests = %#v", ipRow.RecentDests)
+	}
+}
+
+func TestMonitorStatsCountWholeLogNotTheDisplayedPage(t *testing.T) {
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "access.log")
+	var b strings.Builder
+	for i := range 50 {
+		fmt.Fprintf(&b,
+			"2026/09/15 00:%02d:%02d.000000 from 10.0.%d.%d:1000 accepted //host%d.example:443 [in-2053-tcp >> direct]\n",
+			i/60, i%60, i/256, i%256, i)
+	}
+	if err := os.WriteFile(logPath, []byte(b.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	inbound := &model.Inbound{Remark: "Extension", Port: 2053, Tag: "in-2053-tcp"}
+	entries := readExtensionAccessLog(logPath, inbound, "", nil, nil)
+	if len(entries) != 50 {
+		t.Fatalf("parsed %d lines, want 50", len(entries))
+	}
+
+	out := &ExtensionMonitorSnapshot{Inbound: &ExtensionInboundInfo{}}
+	clients, _ := buildMonitorClients(entries, nil, nil, time.Now())
+	fillMonitorStats(out, entries, clients, 0, 10)
+
+	if out.Stats.EventCount != 50 {
+		t.Fatalf("eventCount = %d, want the whole log (50), not the page", out.Stats.EventCount)
+	}
+	if out.Stats.Accepted != 50 {
+		t.Fatalf("accepted = %d, want 50", out.Stats.Accepted)
+	}
+	if out.Stats.UniqueDests != 50 || out.Stats.UniqueIps != 50 {
+		t.Fatalf("dests = %d, ips = %d, want 50 each", out.Stats.UniqueDests, out.Stats.UniqueIps)
+	}
+	if len(out.Logs) != 10 || out.Stats.LogCount != 10 {
+		t.Fatalf("logs = %d, logCount = %d, want the 10-line page", len(out.Logs), out.Stats.LogCount)
+	}
+	if out.Logs[len(out.Logs)-1].DestHost != "host49.example" {
+		t.Fatalf("page must keep the newest lines, got %q", out.Logs[len(out.Logs)-1].DestHost)
 	}
 }
 

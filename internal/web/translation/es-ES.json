@@ -148,7 +148,7 @@
       "rawLog": "Registro crudo",
       "packet": "Paquete",
       "uniqueDests": "Destinos únicos",
-      "uniqueUsers": "Usuarios",
+      "uniqueIps": "IP únicas",
       "eventCount": "Eventos",
       "lastDest": "Último destino",
       "recentDests": "Sitios recientes",

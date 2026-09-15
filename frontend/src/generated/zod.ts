@@ -508,6 +508,9 @@ export const ClientsSummarySchema = z.object({
 export type ClientsSummary = z.infer<typeof ClientsSummarySchema>;
 
 export const ExtensionClientRowSchema = z.object({
+  clientIp: z.string(),
+  country: z.string(),
+  countryCode: z.string(),
   down: z.number().int(),
   email: z.string(),
   enable: z.boolean(),
@@ -516,8 +519,10 @@ export const ExtensionClientRowSchema = z.object({
   lastOnline: z.number().int(),
   lastURL: z.string(),
   online: z.boolean(),
+  recentDests: z.array(z.string()),
   total: z.number().int(),
   up: z.number().int(),
+  user: z.string(),
 });
 export type ExtensionClientRow = z.infer<typeof ExtensionClientRowSchema>;
 
@@ -537,6 +542,8 @@ export type ExtensionInboundInfo = z.infer<typeof ExtensionInboundInfoSchema>;
 export const ExtensionLogEntrySchema = z.object({
   clientIp: z.string(),
   clientPort: z.string(),
+  country: z.string(),
+  countryCode: z.string(),
   destAddress: z.string(),
   destHost: z.string(),
   destPort: z.string(),
@@ -551,6 +558,7 @@ export const ExtensionLogEntrySchema = z.object({
   status: z.string(),
   time: z.string(),
   url: z.string(),
+  user: z.string(),
 });
 export type ExtensionLogEntry = z.infer<typeof ExtensionLogEntrySchema>;
 
@@ -568,10 +576,11 @@ export type ExtensionMonitorSnapshot = z.infer<typeof ExtensionMonitorSnapshotSc
 export const ExtensionMonitorStatsSchema = z.object({
   accepted: z.number().int(),
   eventCount: z.number().int(),
+  logCount: z.number().int(),
   online: z.number().int(),
   rejected: z.number().int(),
   uniqueDests: z.number().int(),
-  uniqueUsers: z.number().int(),
+  uniqueIps: z.number().int(),
 });
 export type ExtensionMonitorStats = z.infer<typeof ExtensionMonitorStatsSchema>;
 

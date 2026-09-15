@@ -148,7 +148,7 @@
       "rawLog": "Ham günlük",
       "packet": "Paket",
       "uniqueDests": "Benzersiz hedefler",
-      "uniqueUsers": "Kullanıcılar",
+      "uniqueIps": "Benzersiz IP",
       "eventCount": "Olaylar",
       "lastDest": "Son hedef",
       "recentDests": "Son siteler",

@@ -148,7 +148,7 @@
       "rawLog": "Log mentah",
       "packet": "Paket",
       "uniqueDests": "Tujuan unik",
-      "uniqueUsers": "Pengguna",
+      "uniqueIps": "IP unik",
       "eventCount": "Peristiwa",
       "lastDest": "Tujuan terakhir",
       "recentDests": "Situs terkini",

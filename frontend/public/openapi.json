@@ -2087,6 +2087,18 @@
       "ExtensionClientRow": {
         "description": "ExtensionClientRow is one client on the extension inbound plus last dest.",
         "properties": {
+          "clientIp": {
+            "example": "192.0.2.10",
+            "type": "string"
+          },
+          "country": {
+            "example": "Iran",
+            "type": "string"
+          },
+          "countryCode": {
+            "example": "IR",
+            "type": "string"
+          },
           "down": {
             "example": 4194304,
             "format": "int64",
@@ -2121,6 +2133,15 @@
             "example": true,
             "type": "boolean"
           },
+          "recentDests": {
+            "example": [
+              "https://example.com"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "total": {
             "example": 10737418240,
             "format": "int64",
@@ -2130,9 +2151,16 @@
             "example": 1048576,
             "format": "int64",
             "type": "integer"
+          },
+          "user": {
+            "example": "192.0.2.10",
+            "type": "string"
           }
         },
         "required": [
+          "clientIp",
+          "country",
+          "countryCode",
           "down",
           "email",
           "enable",
@@ -2141,8 +2169,10 @@
           "lastOnline",
           "lastURL",
           "online",
+          "recentDests",
           "total",
-          "up"
+          "up",
+          "user"
         ],
         "type": "object"
       },
@@ -2212,6 +2242,14 @@
             "example": "54321",
             "type": "string"
           },
+          "country": {
+            "example": "Iran",
+            "type": "string"
+          },
+          "countryCode": {
+            "example": "IR",
+            "type": "string"
+          },
           "destAddress": {
             "example": "tcp:example.com:443",
             "type": "string"
@@ -2267,11 +2305,17 @@
           "url": {
             "example": "https://example.com",
             "type": "string"
+          },
+          "user": {
+            "example": "alice@example.com",
+            "type": "string"
           }
         },
         "required": [
           "clientIp",
           "clientPort",
+          "country",
+          "countryCode",
           "destAddress",
           "destHost",
           "destPort",
@@ -2285,7 +2329,8 @@
           "raw",
           "status",
           "time",
-          "url"
+          "url",
+          "user"
         ],
         "type": "object"
       },
@@ -2339,14 +2384,19 @@
         "type": "object"
       },
       "ExtensionMonitorStats": {
-        "description": "ExtensionMonitorStats is the live tally for the current log window.",
+        "description": "ExtensionMonitorStats tallies the whole access log, not the page of lines\nLogs carries: the log holds far more events than any UI table shows, and a\ncount that silently equalled the display limit read as a broken counter.",
         "properties": {
           "accepted": {
-            "example": 120,
+            "example": 107700,
             "type": "integer"
           },
           "eventCount": {
-            "example": 128,
+            "example": 107711,
+            "type": "integer"
+          },
+          "logCount": {
+            "description": "LogCount is how many of those events Logs actually carries.",
+            "example": 400,
             "type": "integer"
           },
           "online": {
@@ -2354,25 +2404,26 @@
             "type": "integer"
           },
           "rejected": {
-            "example": 8,
+            "example": 11,
             "type": "integer"
           },
           "uniqueDests": {
-            "example": 17,
+            "example": 108,
             "type": "integer"
           },
-          "uniqueUsers": {
-            "example": 4,
+          "uniqueIps": {
+            "example": 319,
             "type": "integer"
           }
         },
         "required": [
           "accepted",
           "eventCount",
+          "logCount",
           "online",
           "rejected",
           "uniqueDests",
-          "uniqueUsers"
+          "uniqueIps"
         ],
         "type": "object"
       },
@@ -7426,6 +7477,9 @@
                     "accessLogPath": "/var/log/x-ui/access.log",
                     "clients": [
                       {
+                        "clientIp": "192.0.2.10",
+                        "country": "Iran",
+                        "countryCode": "IR",
                         "down": 4194304,
                         "email": "alice@example.com",
                         "enable": true,
@@ -7434,8 +7488,12 @@
                         "lastOnline": 1735680000000,
                         "lastURL": "https://example.com",
                         "online": true,
+                        "recentDests": [
+                          "https://example.com"
+                        ],
                         "total": 10737418240,
-                        "up": 1048576
+                        "up": 1048576,
+                        "user": "192.0.2.10"
                       }
                     ],
                     "found": true,
@@ -7444,6 +7502,8 @@
                       {
                         "clientIp": "192.0.2.10",
                         "clientPort": "54321",
+                        "country": "Iran",
+                        "countryCode": "IR",
                         "destAddress": "tcp:example.com:443",
                         "destHost": "example.com",
                         "destPort": "443",
@@ -7457,16 +7517,18 @@
                         "raw": "2025/01/01 12:00:00.000000 from 192.0.2.10:54321 accepted tcp:example.com:443 [inbound-2053 >> direct] email: alice@example.com",
                         "status": "accepted",
                         "time": "2025-01-01T12:00:00Z",
-                        "url": "https://example.com"
+                        "url": "https://example.com",
+                        "user": "alice@example.com"
                       }
                     ],
                     "stats": {
-                      "accepted": 120,
-                      "eventCount": 128,
+                      "accepted": 107700,
+                      "eventCount": 107711,
+                      "logCount": 400,
                       "online": 2,
-                      "rejected": 8,
-                      "uniqueDests": 17,
-                      "uniqueUsers": 4
+                      "rejected": 11,
+                      "uniqueDests": 108,
+                      "uniqueIps": 319
                     }
                   }
                 }

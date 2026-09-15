@@ -481,6 +481,9 @@ export interface ClientsSummary {
 }
 
 export interface ExtensionClientRow {
+  clientIp: string;
+  country: string;
+  countryCode: string;
   down: number;
   email: string;
   enable: boolean;
@@ -489,8 +492,10 @@ export interface ExtensionClientRow {
   lastOnline: number;
   lastURL: string;
   online: boolean;
+  recentDests: string[];
   total: number;
   up: number;
+  user: string;
 }
 
 export interface ExtensionInboundInfo {
@@ -508,6 +513,8 @@ export interface ExtensionInboundInfo {
 export interface ExtensionLogEntry {
   clientIp: string;
   clientPort: string;
+  country: string;
+  countryCode: string;
   destAddress: string;
   destHost: string;
   destPort: string;
@@ -522,6 +529,7 @@ export interface ExtensionLogEntry {
   status: string;
   time: string;
   url: string;
+  user: string;
 }
 
 export interface ExtensionMonitorSnapshot {
@@ -537,10 +545,11 @@ export interface ExtensionMonitorSnapshot {
 export interface ExtensionMonitorStats {
   accepted: number;
   eventCount: number;
+  logCount: number;
   online: number;
   rejected: number;
   uniqueDests: number;
-  uniqueUsers: number;
+  uniqueIps: number;
 }
 
 export interface FallbackParentInfo {

@@ -52,7 +52,8 @@ export const ExtensionMonitorSnapshotSchema = z
       .object({
         eventCount: z.number().optional(),
         uniqueDests: z.number().optional(),
-        uniqueUsers: z.number().optional(),
+        uniqueIps: z.number().optional(),
+        logCount: z.number().optional(),
         online: z.number().optional(),
         accepted: z.number().optional(),
         rejected: z.number().optional(),

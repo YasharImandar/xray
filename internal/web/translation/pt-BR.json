@@ -148,7 +148,7 @@
       "rawLog": "Log bruto",
       "packet": "Pacote",
       "uniqueDests": "Destinos únicos",
-      "uniqueUsers": "Usuários",
+      "uniqueIps": "IPs únicos",
       "eventCount": "Eventos",
       "lastDest": "Último destino",
       "recentDests": "Sites recentes",
