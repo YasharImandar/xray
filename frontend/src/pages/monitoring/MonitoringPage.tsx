@@ -49,6 +49,8 @@ import './MonitoringPage.css';
 
 const POLL_MS = 3000;
 const LOG_COUNT = 400;
+const LOG_PAGE_SIZES = [20, 50, 100, 200, 400];
+const CLIENT_PAGE_SIZES = [8, 20, 50, 100];
 
 const XRAY_STATE_KEYS: Record<string, string> = {
   running: 'pages.index.xrayStatusRunning',
@@ -103,6 +105,10 @@ export default function MonitoringPage() {
   const [filter, setFilter] = useState('');
   const [paused, setPaused] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [logPage, setLogPage] = useState(1);
+  const [logPageSize, setLogPageSize] = useState(20);
+  const [clientPage, setClientPage] = useState(1);
+  const [clientPageSize, setClientPageSize] = useState(8);
 
   const monitorQuery = useQuery({
     queryKey: keys.server.extensionMonitor(LOG_COUNT, filter),
@@ -476,7 +482,18 @@ export default function MonitoringPage() {
                       }
                       columns={clientColumns}
                       dataSource={clients}
-                      pagination={clients.length > 8 ? { pageSize: 8 } : false}
+                      pagination={{
+                        current: clientPage,
+                        pageSize: clientPageSize,
+                        total: clients.length,
+                        showSizeChanger: clients.length > 8,
+                        pageSizeOptions: CLIENT_PAGE_SIZES.map(String),
+                        hideOnSinglePage: clients.length <= clientPageSize,
+                        onChange: (page, size) => {
+                          setClientPage(page);
+                          setClientPageSize(size);
+                        },
+                      }}
                       locale={{ emptyText: t('pages.monitoring.noOnlineClients') }}
                       scroll={{ x: true }}
                     />
@@ -490,7 +507,10 @@ export default function MonitoringPage() {
                       <Input.Search
                         allowClear
                         placeholder={t('pages.monitoring.filterLogs')}
-                        onSearch={setFilter}
+                        onSearch={(value) => {
+                          setFilter(value);
+                          setLogPage(1);
+                        }}
                         style={{ width: isMobile ? 180 : 280 }}
                       />
                     }
@@ -503,9 +523,18 @@ export default function MonitoringPage() {
                       columns={logColumns}
                       dataSource={[...logs].reverse()}
                       expandable={{ expandedRowRender: expandedLog }}
-                      pagination={
-                        logs.length > 20 ? { pageSize: 20, showSizeChanger: true } : false
-                      }
+                      pagination={{
+                        current: logPage,
+                        pageSize: logPageSize,
+                        total: logs.length,
+                        showSizeChanger: true,
+                        pageSizeOptions: LOG_PAGE_SIZES.map(String),
+                        hideOnSinglePage: logs.length <= 20 && logPageSize <= 20,
+                        onChange: (page, size) => {
+                          setLogPage(page);
+                          setLogPageSize(size);
+                        },
+                      }}
                       locale={{ emptyText: t('pages.monitoring.noLogs') }}
                       scroll={{ x: 1100 }}
                     />

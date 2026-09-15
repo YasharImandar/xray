@@ -1,4 +1,5 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -190,5 +191,56 @@ describe('MonitoringPage', () => {
       expect(screen.getAllByText('192.0.2.10').length).toBeGreaterThan(0);
     });
     expect(screen.getAllByText('https://youtube.com').length).toBeGreaterThan(0);
+  });
+
+  it('keeps a larger log page size after the monitor poll refreshes', async () => {
+    const logs = Array.from({ length: 25 }, (_, i) => ({
+      time: `2025-01-01T12:00:${String(i).padStart(2, '0')}.000Z`,
+      user: 'alice@example.com',
+      email: 'alice@example.com',
+      clientIp: '192.0.2.10',
+      url: `https://example.com/${i}`,
+      packet: `pkt-${i}`,
+      status: 'accepted',
+      event: 'direct',
+      raw: `raw-line-${i}`,
+    }));
+    vi.mocked(HttpUtil.get).mockImplementation(async (url: string) => {
+      if (url.includes('/panel/api/server/history/')) return new Msg(true, '', []);
+      if (url.includes('/panel/api/server/extensionMonitor')) {
+        return new Msg(true, '', {
+          found: true,
+          accessLogEnabled: true,
+          inbound: { id: 1, remark: 'extension', tag: 'inbound-2053', port: 2053, enable: true },
+          logs,
+          clients: [],
+          stats: { eventCount: 25, uniqueDests: 25, uniqueUsers: 1, online: 0 },
+        });
+      }
+      return new Msg(false, 'unexpected get ' + url, null);
+    });
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <MemoryRouter>
+        <MonitoringPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('https://example.com/24')).toBeTruthy();
+    });
+    const logCard = document.querySelector('.mon-log-card');
+    expect(logCard).toBeTruthy();
+    expect(within(logCard as HTMLElement).getAllByRole('row').length).toBeLessThan(25 + 2);
+
+    const sizeTrigger = within(logCard as HTMLElement).getByRole('combobox');
+    await user.click(sizeTrigger);
+    await user.click(await screen.findByTitle('50 / page'));
+
+    await waitFor(() => {
+      expect(within(logCard as HTMLElement).getByText('https://example.com/0')).toBeTruthy();
+      expect(within(logCard as HTMLElement).getByText('https://example.com/24')).toBeTruthy();
+    });
   });
 });
