@@ -174,7 +174,7 @@ describe('MonitoringPage', () => {
           clients: [
             {
               user: '192.0.2.10',
-              email: '192.0.2.10',
+              email: '',
               clientIp: '192.0.2.10',
               country: 'Iran',
               countryCode: 'IR',
@@ -201,6 +201,15 @@ describe('MonitoringPage', () => {
     });
     expect(screen.getAllByText('https://youtube.com').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Iran/).length).toBeGreaterThan(0);
+
+    // No accounts on an HTTP inbound, so the IP is the identity and must not
+    // also get a redundant User column next to it.
+    const clientCard = document.querySelector('.mon-clients-card');
+    const headers = within(clientCard as HTMLElement)
+      .getAllByRole('columnheader')
+      .map((th) => th.textContent);
+    expect(headers).toContain('Client IP');
+    expect(headers).not.toContain('User');
   });
 
   it('keeps a larger log page size after the monitor poll refreshes', async () => {

@@ -174,6 +174,9 @@ func TestBuildMonitorClientsFromClientIPs(t *testing.T) {
 	if !ipRow.Online || ipRow.Hits != 2 || ipRow.LastURL != "https://fonts.gstatic.com" {
 		t.Fatalf("ip row = %#v", ipRow)
 	}
+	if ipRow.Email != "" {
+		t.Fatalf("email = %q, want empty so the UI can drop the duplicate User column", ipRow.Email)
+	}
 	if len(ipRow.RecentDests) != 2 || ipRow.RecentDests[0] != "https://fonts.gstatic.com" {
 		t.Fatalf("recent dests = %#v", ipRow.RecentDests)
 	}

@@ -138,9 +138,14 @@ export default function MonitoringPage() {
   const pageClass =
     `monitoring-page ${isDark ? 'is-dark' : ''} ${isUltra ? 'is-ultra' : ''}`.trim();
 
+  // An HTTP inbound has no accounts, so every identity is just the client IP.
+  // Keeping both columns then printed the same value twice.
+  const namedClients = clients.some((row) => asText(row.email) !== '');
+  const namedLogs = logs.some((row) => asText(row.email) !== '');
+
   const clientColumns: ColumnsType<ExtensionClientRow> = [
     {
-      title: t('pages.monitoring.user'),
+      title: namedClients ? t('pages.monitoring.user') : t('pages.monitoring.clientIp'),
       key: 'user',
       ellipsis: true,
       render: (_, row) => (
@@ -149,27 +154,34 @@ export default function MonitoringPage() {
             {row.online ? t('online') : t('offline')}
           </Tag>
           <Typography.Text copyable>
-            {asText(row.user) || asText(row.email) || t('none')}
+            {asText(row.email) || asText(row.user) || asText(row.clientIp) || t('none')}
           </Typography.Text>
           <CountryBeside country={asText(row.country)} countryCode={asText(row.countryCode)} />
         </Space>
       ),
     },
-    {
-      title: t('pages.monitoring.clientIp'),
-      dataIndex: 'clientIp',
-      width: 220,
-      render: (ip: string | undefined, row) => {
-        const addr = asText(ip);
-        if (!addr) return t('none');
-        return (
-          <Space size={6} wrap>
-            <Typography.Text copyable={{ text: addr }}>{addr}</Typography.Text>
-            <CountryBeside country={asText(row.country)} countryCode={asText(row.countryCode)} />
-          </Space>
-        );
-      },
-    },
+    ...(namedClients
+      ? ([
+          {
+            title: t('pages.monitoring.clientIp'),
+            dataIndex: 'clientIp',
+            width: 220,
+            render: (ip: string | undefined, row) => {
+              const addr = asText(ip);
+              if (!addr) return t('none');
+              return (
+                <Space size={6} wrap>
+                  <Typography.Text copyable={{ text: addr }}>{addr}</Typography.Text>
+                  <CountryBeside
+                    country={asText(row.country)}
+                    countryCode={asText(row.countryCode)}
+                  />
+                </Space>
+              );
+            },
+          },
+        ] satisfies ColumnsType<ExtensionClientRow>)
+      : []),
     {
       title: t('pages.monitoring.lastDest'),
       key: 'lastDest',
@@ -213,15 +225,19 @@ export default function MonitoringPage() {
       width: isMobile ? 110 : 170,
       render: (value: string | undefined) => formatWhen(value, t('none')),
     },
-    {
-      title: t('pages.monitoring.user'),
-      dataIndex: 'email',
-      ellipsis: true,
-      render: (email: string | undefined, row) => {
-        const user = asText(row.user) || asText(email);
-        return user ? <Typography.Text copyable>{user}</Typography.Text> : t('none');
-      },
-    },
+    ...(namedLogs
+      ? ([
+          {
+            title: t('pages.monitoring.user'),
+            dataIndex: 'email',
+            ellipsis: true,
+            render: (email: string | undefined) => {
+              const user = asText(email);
+              return user ? <Typography.Text copyable>{user}</Typography.Text> : t('none');
+            },
+          },
+        ] satisfies ColumnsType<ExtensionLogEntry>)
+      : []),
     {
       title: t('pages.monitoring.clientIp'),
       key: 'client',
@@ -290,10 +306,9 @@ export default function MonitoringPage() {
         column={isMobile ? 1 : 2}
         className="mon-log-details"
         items={[
-          {
-            label: t('pages.monitoring.user'),
-            children: asText(row.user) || asText(row.email) || t('none'),
-          },
+          ...(asText(row.email)
+            ? [{ label: t('pages.monitoring.user'), children: asText(row.email) }]
+            : []),
           { label: t('pages.monitoring.destUrl'), children: asText(row.url) || t('none') },
           { label: t('pages.monitoring.destHost'), children: asText(row.destHost) || t('none') },
           { label: t('pages.monitoring.destPort'), children: asText(row.destPort) || t('none') },
@@ -512,6 +527,7 @@ export default function MonitoringPage() {
 
                   <Card
                     size="small"
+                    className="mon-clients-card"
                     title={t('pages.monitoring.onlineClients')}
                     extra={`${stats?.online ?? 0}/${clients.length}`}
                   >

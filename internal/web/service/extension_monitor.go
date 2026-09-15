@@ -586,9 +586,8 @@ func buildMonitorClients(entries []ExtensionLogEntry, stats []xray.ClientTraffic
 			RecentDests: reverseStrings(agg.dests),
 			Hits:        agg.hits,
 		}
-		if row.Email == "" {
-			row.Email = key
-		}
+		// Email stays empty for a row the access log only knows by IP, so the
+		// UI can tell an actual account apart from an IP-derived identity.
 		if !agg.lastSeen.IsZero() {
 			row.LastOnline = agg.lastSeen.UnixMilli()
 		}
