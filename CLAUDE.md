@@ -83,6 +83,9 @@ file locations when it can answer in one hop.
   server is the finished `x-ui` binary (replace `/usr/local/x-ui/x-ui`, then
   restart the service). If GitHub Actions cannot publish, wait or build
   locally — do not "just compile on the box". See `deploy/README.md`.
+  Verify with `make check` / `make run` on the local machine. Do not SSH to
+  production to confirm a change. `make linux-amd64` is only for producing
+  the file you later copy — never for testing on the VPS.
 - Fix size must match bug size. Find the root cause, then make the SMALLEST
   change that removes it — a one-line guard beats a new subsystem. A small bug
   does not earn new columns, jobs, abstractions, config knobs or helper layers.
@@ -161,19 +164,26 @@ A fresh clone has no `internal/web/dist/`, so a bare `go build ./...` dies with
 `pattern all:dist: no matching files found` while ~35 other packages pass — it
 reads as a broken repo, not a missing step. Run `make dist-stub` once; every
 `make` Go target already depends on it, which is why `make test-go` beats
-`go test ./...`. Run `make help` for all targets. The local gate:
+`go test ./...`. Run `make help` for all targets.
 
-    make verify   # gen-check + lint + typecheck + test + build + build-storybook
+Daily loop (no VPS):
 
-That is the *fast* gate, not all of CI. `ci.yml` also runs `make race`,
-`make vulncheck`, a live-Postgres job (where a SKIP counts as a failure) and a
-30s fuzz smoke on `FuzzParseLink`/`FuzzDecodeCertPin` — run those locally when
-you touch DB/dialect or parser code.
+    make check    # Go tests + frontend unit/component
+    make run      # panel at http://127.0.0.1:2053 (admin/admin)
 
-Common targets: `make gen` (regenerate Zod/OpenAPI), `make lint` (Go + frontend),
-`make test` (Go `-shuffle=on` + frontend), `make race`, `make build`. See `Makefile`.
+`make verify` is the full CI mirror (needs golangci-lint + Playwright Chromium).
+`ci.yml` also runs `make race`, `make vulncheck`, a live-Postgres job (where a
+SKIP counts as a failure) and a 30s fuzz smoke on `FuzzParseLink` /
+`FuzzDecodeCertPin` — run those locally when you touch DB/dialect or parser
+code. Ship a linux-amd64 binary with `make linux-amd64` (local Docker) only
+when asked to deploy — copy that file, do not compile on the host.
+
+Common targets: `make check`, `make run`, `make linux-amd64`, `make gen`,
+`make lint`, `make test`, `make race`, `make build`. See `Makefile`.
 
 ## Definition of done (before opening a PR)
-1. `make verify` passes — its `gen-check` already runs `make gen` and fails on a
-   dirty `frontend/src/generated` / `frontend/public/openapi.json`.
+1. `make check` passes on this machine. Do not use the live VPS as a test
+   harness. `make verify` is the full CI mirror when lint/Storybook tools are
+   installed — its `gen-check` already runs `make gen` and fails on a dirty
+   `frontend/src/generated` / `frontend/public/openapi.json`.
 2. Diff is focused; refactors are separate from feature work.

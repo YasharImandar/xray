@@ -243,6 +243,19 @@ For deeper notes on the frontend toolchain see [`frontend/README.md`](frontend/R
 
 Tests live next to the code (`foo.go` ↔ `foo_test.go`); frontend specs and golden fixtures live in `frontend/src/test/`.
 
+### Local check (no VPS)
+
+Do not SSH to production to verify a change. On this machine:
+
+```bash
+make check    # Go tests + frontend unit/component tests
+make run      # panel at http://127.0.0.1:2053 (admin / admin)
+```
+
+`make verify` mirrors CI and needs `golangci-lint` plus Playwright Chromium.
+`make linux-amd64` only produces the linux binary (local Docker) for a later
+copy to `/usr/local/x-ui/x-ui` — never compile on the live host.
+
 ### Go conventions
 
 - **Stdlib `testing` only** — no testify. Table-driven with `t.Run` subtests and `t.Helper()` on helpers.

@@ -58,12 +58,21 @@ test-go: dist-stub ## Go tests (shuffle, no cache)
 race: dist-stub ## Go tests with the race detector (needs a C compiler)
 	go test -race -shuffle=on -count=1 -timeout 25m $(GO_PKGS)
 
+.PHONY: test-fe-unit
+test-fe-unit: ## Frontend unit + component tests (no Playwright/Storybook)
+	cd $(FRONTEND) && npx vitest run --project unit --project components
+
 .PHONY: test-fe
-test-fe: ## Frontend tests (vitest)
+test-fe: ## Frontend tests (vitest, including Storybook/Playwright)
 	cd $(FRONTEND) && npm test
 
 .PHONY: test
 test: test-go test-fe ## All tests
+
+# Daily local gate. Does not SSH, compile, or deploy to any VPS.
+.PHONY: check
+check: test-go test-fe-unit ## Local verify (Go + frontend unit/component). No VPS.
+	@echo "check: OK — do not touch the live server to verify this"
 
 .PHONY: vulncheck
 vulncheck: dist-stub ## govulncheck
@@ -76,6 +85,14 @@ build-fe: ## Build the Vite bundles into internal/web/dist
 .PHONY: build
 build: build-fe ## Build the frontend then the Go binary
 	go build ./...
+
+.PHONY: run
+run: ## Run the panel locally at http://localhost:2053 (admin/admin)
+	./scripts/run-local.sh
+
+.PHONY: linux-amd64
+linux-amd64: ## Cross-build the VPS x-ui binary in local Docker (never on the VPS)
+	./scripts/build-linux-amd64.sh
 
 .PHONY: build-storybook
 build-storybook: ## Build the static Storybook (compile-checks all stories)

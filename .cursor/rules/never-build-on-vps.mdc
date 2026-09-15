@@ -11,4 +11,6 @@ Forbidden on the server: `go build`, `make build`, `npm run build`, installing G
 
 Allowed: build linux-amd64 on CI or the local machine (Docker if the host is not Linux). Copy only the finished `x-ui` binary to `/usr/local/x-ui/x-ui` and restart the service.
 
+Verify with `make check` and `make run` locally. Do not SSH to the VPS to confirm a change. `make linux-amd64` only when shipping a binary.
+
 If GitHub Actions cannot publish a release, wait or build locally. Never "just compile on the box". Details: `deploy/README.md`, `CLAUDE.md`.
