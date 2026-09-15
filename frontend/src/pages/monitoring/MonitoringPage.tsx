@@ -121,23 +121,41 @@ export default function MonitoringPage() {
 
   const clientColumns: ColumnsType<ExtensionClientRow> = [
     {
-      title: t('pages.monitoring.onlineClients'),
-      dataIndex: 'email',
+      title: t('pages.monitoring.user'),
+      key: 'user',
       ellipsis: true,
-      render: (email: string, row) => (
+      render: (_, row) => (
         <Space size={6}>
           <Tag color={row.online ? 'green' : 'default'}>
             {row.online ? t('online') : t('offline')}
           </Tag>
-          <Typography.Text copyable>{email}</Typography.Text>
+          <Typography.Text copyable>
+            {asText(row.user) || asText(row.email) || t('none')}
+          </Typography.Text>
         </Space>
       ),
+    },
+    {
+      title: t('pages.monitoring.clientIp'),
+      dataIndex: 'clientIp',
+      width: 140,
+      render: (ip: string | undefined) => asText(ip) || t('none'),
     },
     {
       title: t('pages.monitoring.lastDest'),
       key: 'lastDest',
       ellipsis: true,
       render: (_, row) => asText(row.lastURL) || asText(row.lastDest) || t('none'),
+    },
+    {
+      title: t('pages.monitoring.recentDests'),
+      key: 'recentDests',
+      ellipsis: true,
+      render: (_, row) => {
+        const dests = Array.isArray(row.recentDests) ? row.recentDests.filter(Boolean) : [];
+        if (dests.length === 0) return t('none');
+        return dests.slice(0, 3).join(' · ');
+      },
     },
     {
       title: t('pages.monitoring.hits'),
@@ -170,8 +188,10 @@ export default function MonitoringPage() {
       title: t('pages.monitoring.user'),
       dataIndex: 'email',
       ellipsis: true,
-      render: (email: string | undefined) =>
-        email ? <Typography.Text copyable>{email}</Typography.Text> : t('none'),
+      render: (email: string | undefined, row) => {
+        const user = asText(row.user) || asText(email);
+        return user ? <Typography.Text copyable>{user}</Typography.Text> : t('none');
+      },
     },
     {
       title: t('pages.monitoring.clientIp'),
@@ -233,6 +253,10 @@ export default function MonitoringPage() {
         column={isMobile ? 1 : 2}
         className="mon-log-details"
         items={[
+          {
+            label: t('pages.monitoring.user'),
+            children: asText(row.user) || asText(row.email) || t('none'),
+          },
           { label: t('pages.monitoring.destUrl'), children: asText(row.url) || t('none') },
           { label: t('pages.monitoring.destHost'), children: asText(row.destHost) || t('none') },
           { label: t('pages.monitoring.destPort'), children: asText(row.destPort) || t('none') },
@@ -447,7 +471,9 @@ export default function MonitoringPage() {
                   >
                     <Table
                       size="small"
-                      rowKey="email"
+                      rowKey={(row) =>
+                        asText(row.user) || asText(row.email) || asText(row.clientIp)
+                      }
                       columns={clientColumns}
                       dataSource={clients}
                       pagination={clients.length > 8 ? { pageSize: 8 } : false}

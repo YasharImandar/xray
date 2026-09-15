@@ -20,8 +20,30 @@ export const ExtensionMonitorSnapshotSchema = z
       .loose()
       .nullable()
       .optional(),
-    logs: z.array(z.object({ raw: z.string() }).loose()),
-    clients: z.array(z.object({ email: z.string() }).loose()),
+    logs: z.array(
+      z
+        .object({
+          raw: z.string(),
+          user: z.string().optional(),
+          email: z.string().optional(),
+          clientIp: z.string().optional(),
+          url: z.string().optional(),
+        })
+        .loose(),
+    ),
+    clients: z.array(
+      z
+        .object({
+          email: z.string(),
+          user: z.string().optional(),
+          clientIp: z.string().optional(),
+          online: z.boolean().optional(),
+          lastDest: z.string().optional(),
+          lastURL: z.string().optional(),
+          recentDests: z.array(z.string()).optional(),
+        })
+        .loose(),
+    ),
     stats: z
       .object({
         eventCount: z.number().optional(),

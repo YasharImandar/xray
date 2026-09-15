@@ -150,6 +150,7 @@
       "uniqueUsers": "Users",
       "eventCount": "Events",
       "lastDest": "Last destination",
+      "recentDests": "Recent sites",
       "filterLogs": "Filter logs",
       "noLogs": "No traffic logged yet",
       "pause": "Pause",

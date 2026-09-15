@@ -69,6 +69,7 @@ describe('MonitoringPage', () => {
             {
               time: '2025-01-01T12:00:00.000Z',
               email: 'alice@example.com',
+              user: 'alice@example.com',
               clientIp: '192.0.2.10',
               clientPort: '54321',
               network: 'tcp',
@@ -88,12 +89,15 @@ describe('MonitoringPage', () => {
           clients: [
             {
               email: 'alice@example.com',
+              user: 'alice@example.com',
+              clientIp: '192.0.2.10',
               enable: true,
               online: true,
               up: 1024,
               down: 2048,
               lastDest: 'example.com:443',
               lastURL: 'https://example.com',
+              recentDests: ['https://example.com'],
               hits: 1,
             },
           ],
@@ -126,5 +130,65 @@ describe('MonitoringPage', () => {
     expect(screen.getAllByText('tcp:example.com:443').length).toBeGreaterThan(0);
     expect(screen.getByText('extension · 2053')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Clear log/ })).toBeTruthy();
+  });
+
+  it('shows HTTP-proxy users by client IP when access log has no email', async () => {
+    vi.mocked(HttpUtil.get).mockImplementation(async (url: string) => {
+      if (url.includes('/panel/api/server/history/')) return new Msg(true, '', []);
+      if (url.includes('/panel/api/server/extensionMonitor')) {
+        return new Msg(true, '', {
+          found: true,
+          accessLogEnabled: true,
+          inbound: {
+            id: 1,
+            remark: 'extension',
+            tag: 'in-2053-tcp',
+            protocol: 'http',
+            port: 2053,
+            enable: true,
+            clients: 1,
+          },
+          logs: [
+            {
+              time: '2026-09-15T12:00:00.000Z',
+              user: '192.0.2.10',
+              clientIp: '192.0.2.10',
+              destHost: 'youtube.com',
+              destPort: '443',
+              url: 'https://youtube.com',
+              packet: 'youtube.com:443',
+              inbound: 'in-2053-tcp',
+              status: 'accepted',
+              event: 'direct',
+              raw: 'from 192.0.2.10:1 accepted //youtube.com:443 [in-2053-tcp >> direct]',
+            },
+          ],
+          clients: [
+            {
+              user: '192.0.2.10',
+              email: '192.0.2.10',
+              clientIp: '192.0.2.10',
+              online: true,
+              lastURL: 'https://youtube.com',
+              recentDests: ['https://youtube.com'],
+              hits: 4,
+            },
+          ],
+          stats: { eventCount: 1, uniqueDests: 1, uniqueUsers: 1, online: 1 },
+        });
+      }
+      return new Msg(false, 'unexpected get ' + url, null);
+    });
+
+    renderWithProviders(
+      <MemoryRouter>
+        <MonitoringPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('192.0.2.10').length).toBeGreaterThan(0);
+    });
+    expect(screen.getAllByText('https://youtube.com').length).toBeGreaterThan(0);
   });
 });

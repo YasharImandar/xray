@@ -45,7 +45,7 @@ Replace `HOST` with the panel host. Do not overwrite the live binary until
 scp x-ui-linux-amd64 root@HOST:/usr/local/x-ui/x-ui.new
 
 ssh root@HOST 'set -euo pipefail
-test "$(/usr/local/x-ui/x-ui.new -v)" = "3.8.4"
+test "$(/usr/local/x-ui/x-ui.new -v)" = "3.8.5"
 ldd /usr/local/x-ui/x-ui.new
 cp -a /usr/local/x-ui/x-ui /usr/local/x-ui/x-ui.bak-$(/usr/local/x-ui/x-ui -v)
 mv /usr/local/x-ui/x-ui.new /usr/local/x-ui/x-ui

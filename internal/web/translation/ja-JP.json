@@ -150,6 +150,7 @@
       "uniqueUsers": "ユーザー",
       "eventCount": "イベント",
       "lastDest": "最終宛先",
+      "recentDests": "最近のサイト",
       "filterLogs": "ログを絞り込み",
       "noLogs": "まだトラフィックが記録されていません",
       "pause": "一時停止",

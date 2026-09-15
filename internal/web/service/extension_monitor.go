@@ -3,6 +3,7 @@ package service
 import (
 	"bufio"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,8 @@ const (
 	extensionInboundPort    = 2053
 	extensionMonitorMax     = 2000
 	extensionMonitorDefault = 400
+	extensionOnlineWindow   = 2 * time.Minute
+	extensionRecentDests    = 8
 )
 
 // ExtensionInboundInfo is the panel inbound this monitor is pinned to.
@@ -49,21 +52,25 @@ type ExtensionLogEntry struct {
 	Status      string `json:"status" example:"accepted"`
 	Event       string `json:"event" example:"direct"`
 	EventCode   int    `json:"eventCode" example:"0"`
+	User        string `json:"user" example:"alice@example.com"`
 	Raw         string `json:"raw" example:"2025/01/01 12:00:00.000000 from 192.0.2.10:54321 accepted tcp:example.com:443 [inbound-2053 >> direct] email: alice@example.com"`
 }
 
 // ExtensionClientRow is one client on the extension inbound plus last dest.
 type ExtensionClientRow struct {
-	Email      string `json:"email" example:"alice@example.com"`
-	Enable     bool   `json:"enable" example:"true"`
-	Online     bool   `json:"online" example:"true"`
-	Up         int64  `json:"up" example:"1048576"`
-	Down       int64  `json:"down" example:"4194304"`
-	Total      int64  `json:"total" example:"10737418240"`
-	LastOnline int64  `json:"lastOnline" example:"1735680000000"`
-	LastDest   string `json:"lastDest" example:"example.com:443"`
-	LastURL    string `json:"lastURL" example:"https://example.com"`
-	Hits       int    `json:"hits" example:"12"`
+	Email       string   `json:"email" example:"alice@example.com"`
+	Enable      bool     `json:"enable" example:"true"`
+	Online      bool     `json:"online" example:"true"`
+	Up          int64    `json:"up" example:"1048576"`
+	Down        int64    `json:"down" example:"4194304"`
+	Total       int64    `json:"total" example:"10737418240"`
+	LastOnline  int64    `json:"lastOnline" example:"1735680000000"`
+	LastDest    string   `json:"lastDest" example:"example.com:443"`
+	LastURL     string   `json:"lastURL" example:"https://example.com"`
+	RecentDests []string `json:"recentDests" example:"[\"https://example.com\"]"`
+	User        string   `json:"user" example:"192.0.2.10"`
+	ClientIP    string   `json:"clientIp" example:"192.0.2.10"`
+	Hits        int      `json:"hits" example:"12"`
 }
 
 // ExtensionMonitorStats is the live tally for the current log window.
@@ -222,7 +229,15 @@ func parseExtensionAccessLine(line string) ExtensionLogEntry {
 	if !base.DateTime.IsZero() {
 		entry.Time = base.DateTime.UTC().Format(time.RFC3339Nano)
 	}
+	entry.User = monitorUserKey(entry)
 	return entry
+}
+
+func monitorUserKey(entry ExtensionLogEntry) string {
+	if email := strings.TrimSpace(entry.Email); email != "" {
+		return email
+	}
+	return strings.TrimSpace(entry.ClientIP)
 }
 
 func lineMatchesExtensionInbound(line string, entry ExtensionLogEntry, inbound *model.Inbound) bool {
@@ -356,28 +371,15 @@ func (s *ServerService) GetExtensionMonitor(count string, filter string) *Extens
 		entries = readExtensionAccessLog(path, inbound, needle, freedoms, blackholes)
 	}
 
-	hits := map[string]int{}
-	lastDest := map[string]string{}
-	lastURL := map[string]string{}
-	for _, entry := range entries {
-		if entry.Email != "" {
-			hits[entry.Email]++
-			lastDest[entry.Email] = destLabel(entry)
-			lastURL[entry.Email] = entry.URL
-		}
-	}
+	clients, onlineCount := buildMonitorClients(entries, inbound.ClientStats, onlines, time.Now())
 	if len(entries) > limit {
 		entries = entries[len(entries)-limit:]
 	}
 	out.Logs = entries
 	dests := map[string]struct{}{}
-	users := map[string]struct{}{}
 	for _, entry := range entries {
 		if entry.DestHost != "" {
 			dests[strings.ToLower(entry.DestHost)+":"+entry.DestPort] = struct{}{}
-		}
-		if entry.Email != "" {
-			users[entry.Email] = struct{}{}
 		}
 		if entry.Status == "rejected" {
 			out.Stats.Rejected++
@@ -387,29 +389,9 @@ func (s *ServerService) GetExtensionMonitor(count string, filter string) *Extens
 	}
 	out.Stats.EventCount = len(entries)
 	out.Stats.UniqueDests = len(dests)
-	out.Stats.UniqueUsers = len(users)
-
-	clients := make([]ExtensionClientRow, 0, len(inbound.ClientStats))
-	onlineCount := 0
-	for _, st := range inbound.ClientStats {
-		row := ExtensionClientRow{
-			Email:      st.Email,
-			Enable:     st.Enable,
-			Up:         st.Up,
-			Down:       st.Down,
-			Total:      st.Total,
-			LastOnline: st.LastOnline,
-			LastDest:   lastDest[st.Email],
-			LastURL:    lastURL[st.Email],
-			Hits:       hits[st.Email],
-		}
-		if _, ok := onlines[st.Email]; ok {
-			row.Online = true
-			onlineCount++
-		}
-		clients = append(clients, row)
-	}
+	out.Stats.UniqueUsers = len(clients)
 	out.Clients = clients
+	out.Inbound.Clients = len(clients)
 	out.Stats.Online = onlineCount
 	return out
 }
@@ -422,6 +404,160 @@ func destLabel(entry ExtensionLogEntry) string {
 		return entry.DestHost + ":" + entry.DestPort
 	}
 	return entry.DestHost
+}
+
+func entryTime(entry ExtensionLogEntry) time.Time {
+	if entry.Time == "" {
+		return time.Time{}
+	}
+	if t, err := time.Parse(time.RFC3339Nano, entry.Time); err == nil {
+		return t
+	}
+	t, _ := time.Parse(time.RFC3339, entry.Time)
+	return t
+}
+
+func destPref(entry ExtensionLogEntry) string {
+	if u := strings.TrimSpace(entry.URL); u != "" {
+		return u
+	}
+	return destLabel(entry)
+}
+
+func pushRecentDest(list []string, item string) []string {
+	item = strings.TrimSpace(item)
+	if item == "" {
+		return list
+	}
+	next := make([]string, 0, len(list)+1)
+	for _, existing := range list {
+		if !strings.EqualFold(existing, item) {
+			next = append(next, existing)
+		}
+	}
+	next = append(next, item)
+	if len(next) > extensionRecentDests {
+		return next[len(next)-extensionRecentDests:]
+	}
+	return next
+}
+
+func reverseStrings(in []string) []string {
+	out := make([]string, len(in))
+	for i, v := range in {
+		out[len(in)-1-i] = v
+	}
+	return out
+}
+
+type monitorUserAgg struct {
+	key      string
+	email    string
+	clientIP string
+	hits     int
+	lastDest string
+	lastURL  string
+	lastSeen time.Time
+	dests    []string
+	enable   bool
+	up       int64
+	down     int64
+	total    int64
+}
+
+func buildMonitorClients(entries []ExtensionLogEntry, stats []xray.ClientTraffic, onlines map[string]struct{}, now time.Time) ([]ExtensionClientRow, int) {
+	aggs := map[string]*monitorUserAgg{}
+	order := make([]string, 0)
+	for _, entry := range entries {
+		key := monitorUserKey(entry)
+		if key == "" {
+			continue
+		}
+		agg, ok := aggs[key]
+		if !ok {
+			agg = &monitorUserAgg{key: key, enable: true}
+			aggs[key] = agg
+			order = append(order, key)
+		}
+		agg.hits++
+		if email := strings.TrimSpace(entry.Email); email != "" {
+			agg.email = email
+		}
+		if ip := strings.TrimSpace(entry.ClientIP); ip != "" {
+			agg.clientIP = ip
+		}
+		agg.lastDest = destLabel(entry)
+		agg.lastURL = entry.URL
+		agg.dests = pushRecentDest(agg.dests, destPref(entry))
+		if ts := entryTime(entry); !ts.IsZero() {
+			agg.lastSeen = ts
+		}
+	}
+	for _, st := range stats {
+		email := strings.TrimSpace(st.Email)
+		if email == "" {
+			continue
+		}
+		agg, ok := aggs[email]
+		if !ok {
+			agg = &monitorUserAgg{key: email, email: email, enable: st.Enable}
+			aggs[email] = agg
+			order = append(order, email)
+		}
+		agg.email = email
+		agg.enable = st.Enable
+		agg.up = st.Up
+		agg.down = st.Down
+		agg.total = st.Total
+		if st.LastOnline > 0 {
+			stSeen := time.UnixMilli(st.LastOnline)
+			if agg.lastSeen.IsZero() || stSeen.After(agg.lastSeen) {
+				agg.lastSeen = stSeen
+			}
+		}
+	}
+
+	rows := make([]ExtensionClientRow, 0, len(order))
+	onlineCount := 0
+	for _, key := range order {
+		agg := aggs[key]
+		row := ExtensionClientRow{
+			Email:       agg.email,
+			User:        key,
+			ClientIP:    agg.clientIP,
+			Enable:      agg.enable,
+			Up:          agg.up,
+			Down:        agg.down,
+			Total:       agg.total,
+			LastDest:    agg.lastDest,
+			LastURL:     agg.lastURL,
+			RecentDests: reverseStrings(agg.dests),
+			Hits:        agg.hits,
+		}
+		if row.Email == "" {
+			row.Email = key
+		}
+		if !agg.lastSeen.IsZero() {
+			row.LastOnline = agg.lastSeen.UnixMilli()
+		}
+		_, namedOnline := onlines[agg.email]
+		if namedOnline || (!agg.lastSeen.IsZero() && now.Sub(agg.lastSeen) <= extensionOnlineWindow) {
+			row.Online = true
+			onlineCount++
+		}
+		rows = append(rows, row)
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		a, b := rows[i], rows[j]
+		if a.Online != b.Online {
+			return a.Online
+		}
+		if a.LastOnline != b.LastOnline {
+			return a.LastOnline > b.LastOnline
+		}
+		return a.User < b.User
+	})
+	return rows, onlineCount
 }
 
 func readExtensionAccessLog(path string, inbound *model.Inbound, needle string, freedoms, blackholes []string) []ExtensionLogEntry {
