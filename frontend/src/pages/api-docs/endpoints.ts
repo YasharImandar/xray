@@ -817,6 +817,12 @@ export const sections: readonly Section[] = [
       },
       {
         method: 'POST',
+        path: '/panel/api/server/clearExtensionLogs',
+        summary:
+          'Truncate the Xray access log the Monitoring page reads. New extension traffic is recorded again immediately. Does not change inbound traffic counters.',
+      },
+      {
+        method: 'POST',
         path: '/panel/api/server/importDB',
         summary:
           'Restore the panel DB from an uploaded backup (multipart form, field name "db"). SQLite panels accept a SQLite database (.db) or a SQLite migration dump (.dump); PostgreSQL panels accept a pg_dump archive (.dump), a SQLite database (.db), or a SQLite migration dump. The panel restarts after restore. Destructive.',

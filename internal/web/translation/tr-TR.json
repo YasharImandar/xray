@@ -161,7 +161,9 @@
       "hits": "İsabet",
       "details": "Zaman",
       "user": "Kullanıcı",
-      "outbound": "Çıkış"
+      "outbound": "Çıkış",
+      "clearLogs": "Günlüğü temizle",
+      "clearLogsConfirm": "Tüm access log satırları silinsin mi? Yeni trafik yine kaydedilir."
     },
     "index": {
       "cpu": "CPU",

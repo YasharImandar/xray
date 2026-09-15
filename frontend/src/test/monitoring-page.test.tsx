@@ -125,5 +125,6 @@ describe('MonitoringPage', () => {
     expect(screen.getAllByText('https://example.com').length).toBeGreaterThan(0);
     expect(screen.getAllByText('tcp:example.com:443').length).toBeGreaterThan(0);
     expect(screen.getByText('extension · 2053')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Clear log/ })).toBeTruthy();
   });
 });

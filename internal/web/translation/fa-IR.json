@@ -161,7 +161,9 @@
       "hits": "ضربه",
       "details": "زمان",
       "user": "کاربر",
-      "outbound": "خروجی"
+      "outbound": "خروجی",
+      "clearLogs": "پاک کردن لاگ",
+      "clearLogsConfirm": "همه خطوط access log پاک شود؟ ترافیک جدید دوباره ثبت می‌شود."
     },
     "index": {
       "cpu": "پردازنده",

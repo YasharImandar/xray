@@ -161,7 +161,9 @@
       "hits": "ヒット",
       "details": "時刻",
       "user": "ユーザー",
-      "outbound": "アウトバウンド"
+      "outbound": "アウトバウンド",
+      "clearLogs": "ログを消去",
+      "clearLogsConfirm": "アクセスログをすべて消去しますか？新しいトラフィックは引き続き記録されます。"
     },
     "index": {
       "cpu": "CPU",

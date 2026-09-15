@@ -161,7 +161,9 @@
       "hits": "Lượt",
       "details": "Thời gian",
       "user": "Người dùng",
-      "outbound": "Outbound"
+      "outbound": "Outbound",
+      "clearLogs": "Xóa nhật ký",
+      "clearLogsConfirm": "Xóa mọi dòng access log? Lưu lượng mới vẫn được ghi."
     },
     "index": {
       "cpu": "CPU",

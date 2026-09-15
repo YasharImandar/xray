@@ -1,10 +1,32 @@
 package service
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 )
+
+func TestClearAccessLogAtTruncatesFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "access.log")
+	if err := os.WriteFile(path, []byte("keep-me-not\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := clearAccessLogAt(path); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("cleared log still has %d bytes", len(got))
+	}
+	if err := clearAccessLogAt("none"); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestPickExtensionInboundPrefersRemarkAndPort(t *testing.T) {
 	rows := []model.Inbound{

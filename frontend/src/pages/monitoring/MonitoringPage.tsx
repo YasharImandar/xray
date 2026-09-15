@@ -10,6 +10,7 @@ import {
   Descriptions,
   Input,
   Layout,
+  Popconfirm,
   Result,
   Row,
   Space,
@@ -20,6 +21,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
+  DeleteOutlined,
   GlobalOutlined,
   LinkOutlined,
   PauseCircleOutlined,
@@ -100,6 +102,7 @@ export default function MonitoringPage() {
   const { status } = useStatusQuery();
   const [filter, setFilter] = useState('');
   const [paused, setPaused] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const monitorQuery = useQuery({
     queryKey: keys.server.extensionMonitor(LOG_COUNT, filter),
@@ -298,6 +301,31 @@ export default function MonitoringPage() {
                   >
                     {t('refresh')}
                   </Button>
+                  <Popconfirm
+                    title={t('pages.monitoring.clearLogsConfirm')}
+                    okType="danger"
+                    okText={t('pages.monitoring.clearLogs')}
+                    cancelText={t('cancel')}
+                    onConfirm={async () => {
+                      setClearing(true);
+                      try {
+                        const msg = await HttpUtil.post('/panel/api/server/clearExtensionLogs');
+                        if (msg?.success) await monitorQuery.refetch();
+                      } finally {
+                        setClearing(false);
+                      }
+                    }}
+                  >
+                    <Button
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={clearing}
+                      disabled={snapshot?.accessLogEnabled === false}
+                    >
+                      {t('pages.monitoring.clearLogs')}
+                    </Button>
+                  </Popconfirm>
                 </Space>
               </div>
 

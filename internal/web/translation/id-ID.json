@@ -161,7 +161,9 @@
       "hits": "Hit",
       "details": "Waktu",
       "user": "Pengguna",
-      "outbound": "Outbound"
+      "outbound": "Outbound",
+      "clearLogs": "Hapus log",
+      "clearLogsConfirm": "Hapus semua baris access log? Lalu lintas baru tetap dicatat."
     },
     "index": {
       "cpu": "CPU",

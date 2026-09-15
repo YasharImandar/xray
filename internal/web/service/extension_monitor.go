@@ -283,6 +283,32 @@ func loadExtensionInbound() (*model.Inbound, error) {
 	return pickExtensionInbound(rows), nil
 }
 
+func accessLogDisabled(path string) bool {
+	p := strings.TrimSpace(path)
+	return p == "" || p == "none" || p == "stdout" || p == "stderr"
+}
+
+func clearAccessLogAt(path string) error {
+	if accessLogDisabled(path) {
+		return nil
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return f.Truncate(0)
+}
+
+// ClearAccessLog empties the Xray access log the Monitoring page reads.
+func (s *ServerService) ClearAccessLog() error {
+	path, err := xray.GetAccessLogPath()
+	if err != nil {
+		return err
+	}
+	return clearAccessLogAt(path)
+}
+
 // GetExtensionMonitor returns live access-log traffic for inbound remark
 // "extension" or port 2053, plus that inbound's clients and a window tally.
 func (s *ServerService) GetExtensionMonitor(count string, filter string) *ExtensionMonitorSnapshot {

@@ -7476,6 +7476,36 @@
         }
       }
     },
+    "/panel/api/server/clearExtensionLogs": {
+      "post": {
+        "tags": [
+          "Server"
+        ],
+        "summary": "Truncate the Xray access log the Monitoring page reads. New extension traffic is recorded again immediately. Does not change inbound traffic counters.",
+        "operationId": "post_panel_api_server_clearExtensionLogs",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/panel/api/server/importDB": {
       "post": {
         "tags": [

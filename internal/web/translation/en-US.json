@@ -161,7 +161,9 @@
       "hits": "Hits",
       "details": "Time",
       "user": "User",
-      "outbound": "Outbound"
+      "outbound": "Outbound",
+      "clearLogs": "Clear log",
+      "clearLogsConfirm": "Clear every access-log line? New traffic will still be recorded."
     },
     "index": {
       "cpu": "CPU",

@@ -161,7 +161,9 @@
       "hits": "الضربات",
       "details": "الوقت",
       "user": "المستخدم",
-      "outbound": "الصادر"
+      "outbound": "الصادر",
+      "clearLogs": "مسح السجل",
+      "clearLogsConfirm": "مسح كل سطور access log؟ ستُسجَّل الحركة الجديدة من جديد."
     },
     "index": {
       "cpu": "المعالج",

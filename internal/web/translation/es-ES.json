@@ -161,7 +161,9 @@
       "hits": "Hits",
       "details": "Hora",
       "user": "Usuario",
-      "outbound": "Salida"
+      "outbound": "Salida",
+      "clearLogs": "Borrar registro",
+      "clearLogsConfirm": "¿Borrar todas las líneas del access log? El tráfico nuevo se seguirá registrando."
     },
     "index": {
       "cpu": "CPU",

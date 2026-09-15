@@ -161,7 +161,9 @@
       "hits": "Hits",
       "details": "Hora",
       "user": "Usuário",
-      "outbound": "Saída"
+      "outbound": "Saída",
+      "clearLogs": "Limpar log",
+      "clearLogsConfirm": "Apagar todas as linhas do access log? O tráfego novo continua a ser gravado."
     },
     "index": {
       "cpu": "CPU",

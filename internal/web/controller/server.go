@@ -65,6 +65,7 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/clientIps", a.getClientIps)
 	g.GET("/fail2banStatus", a.getFail2banStatus)
 	g.GET("/extensionMonitor", a.getExtensionMonitor)
+	g.POST("/clearExtensionLogs", a.clearExtensionLogs)
 
 	g.POST("/stopXrayService", a.stopXrayService)
 	g.POST("/restartXrayService", a.restartXrayService)
@@ -331,6 +332,10 @@ func (a *ServerController) getAmneziaWGLogs(c *gin.Context) {
 
 func (a *ServerController) getExtensionMonitor(c *gin.Context) {
 	jsonObj(c, a.serverService.GetExtensionMonitor(c.DefaultQuery("count", "400"), c.Query("filter")), nil)
+}
+
+func (a *ServerController) clearExtensionLogs(c *gin.Context) {
+	jsonMsg(c, I18nWeb(c, "pages.monitoring.clearLogs"), a.serverService.ClearAccessLog())
 }
 
 // getConfigJson retrieves the Xray configuration as JSON.
